@@ -1,0 +1,6 @@
+usr/include/*
+usr/lib/lib*.a
+usr/lib/lib*.la
+usr/lib/libdrm.so
+usr/lib/libdrm_slp.so
+usr/lib/pkgconfig/*
