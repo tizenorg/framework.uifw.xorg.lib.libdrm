@@ -262,7 +262,7 @@ int drmModeAddFB(int fd, uint32_t width, uint32_t height, uint8_t depth,
 int drmModeAddFB2(int fd, uint32_t width, uint32_t height,
 		  uint32_t pixel_format, uint32_t bo_handles[4],
 		  uint32_t pitches[4], uint32_t offsets[4],
-		  uint32_t *buf_id)
+		  uint32_t *buf_id, uint32_t flags)
 {
 	struct drm_mode_fb_cmd2 f;
 	int ret;
@@ -270,6 +270,7 @@ int drmModeAddFB2(int fd, uint32_t width, uint32_t height,
 	f.width  = width;
 	f.height = height;
 	f.pixel_format = pixel_format;
+	f.flags = flags;
 	memcpy(f.handles, bo_handles, sizeof(uint32_t) * 4);
 	memcpy(f.pitches, pitches, sizeof(uint32_t) * 4);
 	memcpy(f.offsets, offsets, sizeof(uint32_t) * 4);
@@ -839,7 +840,8 @@ int drmModePageFlip(int fd, uint32_t crtc_id, uint32_t fb_id,
 }
 
 int drmModeSetPlane(int fd, uint32_t plane_id, uint32_t crtc_id,
-		    uint32_t fb_id, uint32_t crtc_x, uint32_t crtc_y,
+		    uint32_t fb_id, uint32_t flags,
+		    uint32_t crtc_x, uint32_t crtc_y,
 		    uint32_t crtc_w, uint32_t crtc_h,
 		    uint32_t src_x, uint32_t src_y,
 		    uint32_t src_w, uint32_t src_h)
@@ -850,6 +852,7 @@ int drmModeSetPlane(int fd, uint32_t plane_id, uint32_t crtc_id,
 	s.plane_id = plane_id;
 	s.crtc_id = crtc_id;
 	s.fb_id = fb_id;
+	s.flags = flags;
 	s.crtc_x = crtc_x;
 	s.crtc_y = crtc_y;
 	s.crtc_w = crtc_w;

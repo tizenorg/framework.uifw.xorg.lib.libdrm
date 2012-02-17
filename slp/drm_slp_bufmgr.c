@@ -55,6 +55,7 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 typedef struct{
 	void* data;
 
+	int is_valid;
 	drm_data_free free_func ;
 }drm_slp_user_data;
 
@@ -369,6 +370,9 @@ int drm_slp_bufmgr_cache_flush(drm_slp_bufmgr bufmgr, drm_slp_bo bo, int flags)
 	if (!bufmgr && !bo)
 		return 0;
 
+	if (!bo)
+		flags |= DRM_SLP_CACHE_ALL;
+
 	if (bo)
 	{
 		if(!bo->bufmgr)
@@ -448,9 +452,10 @@ void drm_slp_bo_unref(drm_slp_bo bo)
 			{
 				old_data = (drm_slp_user_data*)rd;
 
-				if(old_data->free_func)
+				if(old_data->is_valid && old_data->free_func)
 				{
-					old_data->free_func(old_data->data);
+					if(old_data->data)
+					    old_data->free_func(old_data->data);
 					old_data->data = NULL;
 					free(old_data);
 				}
@@ -633,6 +638,7 @@ int drm_slp_bo_add_user_data(drm_slp_bo bo, unsigned long key, drm_data_free dat
 
 	data->free_func = data_free_func;
 	data->data = (void*)0;
+	data->is_valid = 0;
 
 	ret = drmSLInsert(bo->user_data, key, data);
 	if(ret == 1) /* Already in list */
@@ -659,11 +665,17 @@ int drm_slp_bo_set_user_data(drm_slp_bo bo, unsigned long key, void* data)
 	if (!old_data)
 		return 0;
 
-	if(old_data->free_func)
+	if(old_data->is_valid)
 	{
-		old_data->free_func(old_data->data);
-		old_data->data = NULL;
+		if(old_data->free_func)
+		{
+			if(old_data->data)
+			    old_data->free_func(old_data->data);
+			old_data->data = NULL;
+		}
 	}
+	else
+		old_data->is_valid = 1;
 
 	old_data->data = data;
 
@@ -675,18 +687,28 @@ int drm_slp_bo_get_user_data(drm_slp_bo bo, unsigned long key, void** data)
 	void *rd;
 	drm_slp_user_data* old_data;
 
+    if(!data) return 0;
+
 	if(!bo || !bo->user_data)
+	{
+	    *data = NULL;
 		return 0;
+	}
 
 	if(drmSLLookup(bo->user_data, key, &rd))
+	{
+	    *data = NULL;
 		return 0;
+	}
 
 	old_data = (drm_slp_user_data*)rd;
 	if (!old_data)
+	{
+	    *data = NULL;
 		return 0;
+	}
 
-	if (data)
-		*data = old_data->data;
+	*data = old_data->data;
 
 	return 1;
 }
@@ -706,9 +728,10 @@ int drm_slp_bo_delete_user_data(drm_slp_bo bo, unsigned long key)
 	if (!old_data)
 		return 0;
 
-	if(old_data->free_func)
+	if(old_data->is_valid && old_data->free_func)
 	{
-		old_data->free_func(old_data->data);
+        if(old_data->data)
+		    old_data->free_func(old_data->data);
 		free(old_data);
 	}
 	drmSLDelete(bo->user_data, key);

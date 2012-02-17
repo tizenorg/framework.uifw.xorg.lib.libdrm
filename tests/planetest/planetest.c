@@ -354,7 +354,7 @@ static void planetest_start(int nr, int start_plane, int crtc, int connector)
 			goto err;
 
 		if (drmModeSetPlane(fd, plane_id[i], c.crtc, fb_data[i]->fb_id,
-					x, y, width, height,
+					0, x, y, width, height,
 					0, 0, width, height)) {
 			fprintf(stderr, "failed to enable plane: %s\n",
 					strerror(errno));
@@ -381,7 +381,7 @@ err:
 			continue;
 
 		if (drmModeSetPlane(fd, plane_id[i], c.crtc,
-				0, 0, 0, /* bufferId, crtc_x, crtc_y */
+				0, 0, 0, 0, /* fb_id, flags, crtc_x, crtc_y */
 				0, 0, /* crtc_w, crtc_h */
 				0, 0, 0, 0 /* src_XXX */)) {
 			fprintf(stderr, "failed to enable plane: %s\n",

@@ -16,7 +16,11 @@ if HAVE_LIBKMS
 SUBDIRS += kmstest modetest planetest
 endif
 
-SUBDIRS += gemtest $(NULL)
+SUBDIRS += gemtest
+
+if HAVE_RADEON
+SUBDIRS += radeon
+endif
 
 if HAVE_LIBUDEV
 

@@ -1,3 +1,45 @@
+libdrm (2.4.27-13slp2) unstable; urgency=low
+
+  * patch from kernel : add virtual display for wireless display
+  * null check of user_data
+  * Git: slp/pkgs/xorg/lib/libdrm
+  * Tag: libdrm_2.4.27-13slp2
+
+ -- SooChan Lim <sc1.lim@samsung.com>  Thu, 09 Feb 2012 20:43:01 +0900
+
+libdrm (2.4.27-12slp2) unstable; urgency=low
+
+  * drm_slp_bufmgr: add error check
+  * increase version
+  * Git: slp/pkgs/xorg/lib/libdrm
+  * Tag: libdrm_2.4.27-12slp2
+
+ -- Boram Park <boram1288.park@samsung.com>  Wed, 04 Jan 2012 17:39:16 +0900
+
+libdrm (2.4.27-11slp2) unstable; urgency=low
+
+  * increase version
+  * Git: slp/pkgs/xorg/lib/libdrm
+  * Tag: libdrm_2.4.27-11slp2
+
+ -- SooChan Lim <sc1.lim@samsung.com>  Tue, 20 Dec 2011 10:41:16 +0900
+
+libdrm (2.4.27-10slp2) unstable; urgency=low
+
+  * patch from kernel
+  * Git: slp/pkgs/xorg/lib/libdrm
+  * Tag: libdrm_2.4.27-10slp2
+
+ -- SooChan Lim <sc1.lim@samsung.com>  Mon, 19 Dec 2011 13:27:17 +0900
+
+libdrm (2.4.27-9slp2) unstable; urgency=low
+
+  * do 'flush all' if bo is NULL
+  * Git: 165.213.180.234:slp/pkgs/xorg/lib/libdrm
+  * Tag: libdrm_2.4.27-9slp2
+
+ -- Boram Park <boram1288.park@samsung.com>  Thu, 08 Dec 2011 16:06:25 +0900
+
 libdrm (2.4.27-8slp2) unstable; urgency=low
 
   * Bug Fix : fix the mutax lock

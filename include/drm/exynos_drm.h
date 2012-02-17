@@ -45,24 +45,6 @@ struct drm_exynos_gem_create {
 };
 
 /**
- * User-desired user ptr import structure.
- *
- * @size: a pointer of size values to each buffer pointed by each user_ptr.
- * @user_ptr: points to user space address mmaped.
- * @handle: a pointer of gem handles.
- *	this variable would be set by gem framework of kernel side.
- *
- * this structure would be used to create new gem and the gem includes
- * physical address corresponding to user_ptr. the purpose of using this
- * structure is to create new gem object corresponding to user_ptr.
- */
-struct drm_exynos_gem_userptr_imp {
-	unsigned int size;
-	uint64_t user_ptr;
-	unsigned int handle;
-};
-
-/**
  * A structure for getting buffer offset.
  *
  * @handle: a pointer to gem object created.
@@ -92,6 +74,22 @@ struct drm_exynos_gem_mmap {
 	unsigned int pad;
 	uint64_t size;
 	uint64_t mapped;
+};
+
+/**
+ * A structure for user connection request of virtual display.
+ *
+ * @connection: indicate whether doing connetion or not by user.
+ * @extensions: if this value is 1 then the vidi driver would need additional
+ *	128bytes edid data.
+ * @pad: just padding to be 64-bit aligned.
+ * @edid: the edid data pointer from user side.
+ */
+struct drm_exynos_vidi_connection {
+	unsigned int connection;
+	unsigned int extensions;
+	unsigned int pad;
+	void *edid;
 };
 
 /**
@@ -165,8 +163,9 @@ struct drm_exynos_plane_set_zpos {
 #define DRM_EXYNOS_GEM_CREATE		0x00
 #define DRM_EXYNOS_GEM_MAP_OFFSET	0x01
 #define DRM_EXYNOS_GEM_MMAP		0x02
-#define DRM_EXYNOS_GEM_USERPTR_IMP	0x03
-#define DRM_EXYNOS_PLANE_SET_ZPOS	0x05
+/* Reserved 0x03 ~ 0x05 for exynos specific gem ioctl */
+#define DRM_EXYNOS_PLANE_SET_ZPOS	0x06
+#define DRM_EXYNOS_VIDI_CONNECTION	0x07
 
 /* temporary ioctl command. */
 #define DRM_EXYNOS_GEM_EXPORT_UMP	0x10
@@ -184,9 +183,6 @@ struct drm_exynos_plane_set_zpos {
 #define DRM_IOCTL_EXYNOS_GEM_MMAP	DRM_IOWR(DRM_COMMAND_BASE + \
 		DRM_EXYNOS_GEM_MMAP, struct drm_exynos_gem_mmap)
 
-#define DRM_IOCTL_EXYNOS_GEM_USERPTR_IMP	DRM_IOWR(DRM_COMMAND_BASE + \
-		DRM_EXYNOS_GEM_USERPTR_IMP, struct drm_exynos_gem_userptr_imp)
-
 #define DRM_IOCTL_EXYNOS_GEM_EXPORT_UMP	DRM_IOWR(DRM_COMMAND_BASE + \
 		DRM_EXYNOS_GEM_EXPORT_UMP, struct drm_exynos_gem_ump)
 
@@ -201,5 +197,8 @@ struct drm_exynos_plane_set_zpos {
 
 #define DRM_IOCTL_EXYNOS_PLANE_SET_ZPOS	DRM_IOWR(DRM_COMMAND_BASE + \
 		DRM_EXYNOS_PLANE_SET_ZPOS, struct drm_exynos_plane_set_zpos)
+
+#define DRM_IOCTL_EXYNOS_VIDI_CONNECTION	DRM_IOWR(DRM_COMMAND_BASE + \
+		DRM_EXYNOS_VIDI_CONNECTION, struct drm_exynos_vidi_connection)
 
 #endif

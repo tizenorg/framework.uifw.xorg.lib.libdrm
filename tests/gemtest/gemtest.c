@@ -80,8 +80,6 @@
 
 #define CACHE_TEST
 
-#define USERPTR_TEST
-
 drmModeRes *resources;
 int fd, modes;
 
@@ -542,21 +540,6 @@ static int exynos_gem_cache_op(int fd,
 	return 0;
 }
 
-static int exynos_gem_userptr_imp(int fd,
-			struct drm_exynos_gem_userptr_imp *imp)
-{
-	int ret;
-
-	ret = ioctl(fd, DRM_IOCTL_EXYNOS_GEM_USERPTR_IMP, imp);
-	if (ret < 0) {
-		fprintf(stderr, "failed to cache operation: %s\n",
-				strerror(-ret));
-		return ret;
-	}
-
-	return 0;
-}
-
 static void
 set_mode(struct connector *c, int count, int page_flip)
 {
@@ -565,7 +548,6 @@ set_mode(struct connector *c, int count, int page_flip)
 	struct drm_exynos_gem_mmap mmap1;
 	struct drm_exynos_gem_cache_op cache_op;
 	struct drm_exynos_gem_ump gem_ump;
-	struct drm_exynos_gem_userptr_imp imp;
 	struct drm_gem_close args;
 	unsigned int fb_id, other_fb_id;
 	int i, ret, width, height, x, stride;
@@ -623,21 +605,6 @@ set_mode(struct connector *c, int count, int page_flip)
 			MAP_SHARED, fd, map_off1.offset);
 
 	memset(usr_addr1, 0x88, gem1.size);
-#endif
-
-#ifdef USERPTR_TEST
-	memset(&imp, 0, sizeof(struct drm_exynos_gem_userptr_imp));
-
-	imp.size = mmap1.size;
-	imp.user_ptr = usr_addr1;
-
-	printf("size = 0x%x, addr = 0x%x\n", imp.size, imp.user_ptr);
-
-	ret = exynos_gem_userptr_imp(fd, &imp);
-	if (ret < 0)
-		return;
-
-	printf("handle = 0x%x\n", imp.handle);
 #endif
 
 	/* get secure id for ump. */
@@ -757,13 +724,6 @@ set_mode(struct connector *c, int count, int page_flip)
 	ret = exynos_gem_close(fd, &args);
 	if (ret < 0)
 		return;
-
-#ifdef USERPTR_TEST
-	args.handle = imp.handle;
-	ret = exynos_gem_close(fd, &args);
-	if (ret < 0)
-		return;
-#endif
 }
 
 extern char *optarg;

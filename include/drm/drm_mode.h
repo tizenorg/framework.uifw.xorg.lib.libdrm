@@ -27,8 +27,6 @@
 #ifndef _DRM_MODE_H
 #define _DRM_MODE_H
 
-#include <linux/videodev2.h>
-
 #define DRM_DISPLAY_INFO_LEN	32
 #define DRM_CONNECTOR_NAME_LEN	32
 #define DRM_DISPLAY_MODE_LEN	32
@@ -122,15 +120,15 @@ struct drm_mode_crtc {
 	struct drm_mode_modeinfo mode;
 };
 
-#define DRM_MODE_PRESENT_TOP_FIELD	(1<<0)
-#define DRM_MODE_PRESENT_BOTTOM_FIELD	(1<<1)
+#define DRM_MODE_PRESENT_TOP_FIELD     (1<<0)
+#define DRM_MODE_PRESENT_BOTTOM_FIELD  (1<<1)
 
 /* Planes blend with or override other bits on the CRTC */
 struct drm_mode_set_plane {
 	__u32 plane_id;
 	__u32 crtc_id;
 	__u32 fb_id; /* fb object contains surface format type */
-	__u32 flags; /* see above flags */
+	__u32 flags;
 
 	/* Signed dest location allows it to be partially off screen */
 	__s32 crtc_x, crtc_y;
@@ -268,17 +266,17 @@ struct drm_mode_fb_cmd {
 	__u32 handle;
 };
 
-#define DRM_MODE_FB_INTERLACED	(1<<0) /* for interlaced framebuffers */
+#define DRM_MODE_FB_INTERLACED (1<<0) /* for interlaced framebuffers */
 
 struct drm_mode_fb_cmd2 {
 	__u32 fb_id;
 	__u32 width, height;
 	__u32 pixel_format; /* fourcc code from drm_fourcc.h */
-	__u32 flags; /* see above flags */
+	__u32 flags;
 
 	/*
 	 * In case of planar formats, this ioctl allows up to 4
-	 * buffer objects with offets and pitches per plane.
+	 * buffer objects with offsets and pitches per plane.
 	 * The pitch and offset order is dictated by the fourcc,
 	 * e.g. NV12 (http://fourcc.org/yuv.php#NV12) is described as:
 	 *
@@ -287,7 +285,7 @@ struct drm_mode_fb_cmd2 {
 	 *   8 bit 2x2 subsampled colour difference samples.
 	 *
 	 * So it would consist of Y as offset[0] and UV as
-	 * offeset[1].  Note that offset[0] will generally
+	 * offset[1].  Note that offset[0] will generally
 	 * be 0.
 	 */
 	__u32 handles[4];
