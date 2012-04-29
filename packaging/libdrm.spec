@@ -1,136 +1,92 @@
-Name:       libdrm
-Summary:    Userspace interface to kernel DRM services -- runtime
-Version:    2.4.27
-Release:    1
-Group:      libs
-License:    TO_FILL
-Source0:    libdrm-%{version}.tar.gz
-Requires(post): /sbin/ldconfig
-Requires(postun): /sbin/ldconfig
-BuildRequires:  pkgconfig(x11)
+#sbs-git:slp/pkgs/xorg/lib/libdrm libdrm 2.4.27 4df9ab272d6eac089f89ecd9302d39263541a794
+Name:           libdrm
+Version:        2.4.27
+Release:        4
+License:        MIT
+Summary:        Userspace interface to kernel DRM services
+Group:          System/Libraries
+Source0:        %{name}-%{version}.tar.gz
+BuildRequires:  kernel-headers
+BuildRequires:  pkgconfig(xorg-macros)
 BuildRequires:  pkgconfig(pthread-stubs)
 BuildRequires:  pkgconfig(pciaccess)
-BuildRequires:  automake
-BuildRequires:  libtool
-
 
 %description
-Userspace interface to kernel DRM services -- runtime
- This library implements the userspace interface to the kernel DRM
- services.  DRM stands for "Direct Rendering Manager", which is the
- kernelspace portion of the "Direct Rendering Infrastructure" (DRI).
- The DRI is currently used on Linux to provide hardware-accelerated
- OpenGL drivers.
- .
- This package provides the runtime environment for libdrm..
-
-
+Description: %{summary}
 
 %package devel
-Summary:    Userspace interface to kernel DRM services -- development files
-Group:      libdevel
-Requires:   libdrm = %{version}-%{release}
-Requires:   libdrm-slp
-Obsoletes:   linux-libc-dev >= 2.6.29
+Summary:        Userspace interface to kernel DRM services
+Group:          Development/Libraries
+Requires:       kernel-headers
+Requires:       libdrm2
+Requires:       libdrm-slp1
+Requires:       libkms1
 
 %description devel
-Userspace interface to kernel DRM services -- development files
- This library implements the userspace interface to the kernel DRM
- services.  DRM stands for "Direct Rendering Manager", which is the
- kernelspace portion of the "Direct Rendering Infrastructure" (DRI).
- The DRI is currently used on Linux to provide hardware-accelerated
- OpenGL drivers.
- .
- This package provides the development environment for libdrm..
+Userspace interface to kernel DRM services
 
+%package -n libdrm2
+Summary:        Userspace interface to kernel DRM services
+Group:          Development/Libraries
 
-%package slp
-Summary:    Userspace interface to slp-specific kernel DRM services -- runtime
-Group:      libs
-Requires(post): /sbin/ldconfig
-Requires(postun): /sbin/ldconfig
+%description -n libdrm2
+Userspace interface to kernel DRM services
 
-%description slp
-Userspace interface to slp-specific kernel DRM services -- runtime
- This library implements the userspace interface to the intel-specific kernel
- DRM services.  DRM stands for "Direct Rendering Manager", which is the
- kernelspace portion of the "Direct Rendering Infrastructure" (DRI). The DRI is
- currently used on Linux to provide hardware-accelerated OpenGL drivers..
+%package slp1
+Summary:        Userspace interface to slp-specific kernel DRM services
+Group:          Development/Libraries
 
+%description slp1
+Userspace interface to slp-specific kernel DRM services
 
-%package -n libkms
-Summary:    Userspace interface to kernel DRM buffer management
-Group:      libs
-Requires(post): /sbin/ldconfig
-Requires(postun): /sbin/ldconfig
+%package -n libkms1
+Summary:        Userspace interface to kernel DRM buffer management
+Group:          Development/Libraries
 
-%description -n libkms
+%description -n libkms1
 Userspace interface to kernel DRM buffer management
- This library implements a unified userspace interface to the different buffer
- management interfaces of the kernel DRM hardware drivers..
-
-
 
 %prep
-%setup -q -n %{name}-%{version}
+%setup -q
 
 
 %build
-%autogen.sh --disable-static
-%configure --disable-static
-make %{?jobs:-j%jobs}
+%reconfigure --prefix=%{_prefix} --mandir=%{_prefix}/share/man --infodir=%{_prefix}/share/info \
+             --enable-static=yes --enable-udev --enable-libkms \
+             --disable-nouveau-experimental-api --disable-radeon --disable-intel
+
+make %{?_smp_mflags}
 
 %install
-rm -rf %{buildroot}
 %make_install
 
 
-
-
 %post -p /sbin/ldconfig
-
 %postun -p /sbin/ldconfig
 
+%post -n libdrm2 -p /sbin/ldconfig
+%postun -n libdrm2 -p /sbin/ldconfig
 
+%post slp1 -p /sbin/ldconfig
+%postun slp1  -p /sbin/ldconfig
 
-
-
-
-%post slp -p /sbin/ldconfig
-
-%postun slp -p /sbin/ldconfig
-
-
-%post -n libkms -p /sbin/ldconfig
-
-%postun -n libkms -p /sbin/ldconfig
-
-%files
-%defattr(-,root,root,-)
-%{_libdir}/libdrm.so.*
-%{_libdir}/libdrm_intel.so.*
-%{_libdir}/libdrm_radeon.so.*
+%post -n libkms1 -p /sbin/ldconfig
+%postun -n libkms1 -p /sbin/ldconfig
 
 
 %files devel
-%defattr(-,root,root,-)
-%{_includedir}/libdrm/*
-%{_includedir}/xf86drmMode.h
-%{_includedir}/xf86drm.h
-
+%dir %{_includedir}/libdrm
+%{_includedir}/*
 %{_libdir}/libdrm.so
 %{_libdir}/libdrm_slp.so
-%{_libdir}/libdrm_intel.so
-%{_libdir}/libdrm_radeon.so
+%{_libdir}/libkms.so
 %{_libdir}/pkgconfig/*
 
-%files slp
-%defattr(-,root,root,-)
+%files -n libdrm2
+%{_libdir}/libdrm.so.*
+
+%files slp1
 %{_libdir}/libdrm_slp*.so.*
 
-%files -n libkms
-%defattr(-,root,root,-)
-%{_includedir}/libkms/libkms.h
-%{_libdir}/libkms.so.1*
-%{_libdir}/libkms*.so
-
+%files -n libkms1
+%{_libdir}/libkms.so.*
