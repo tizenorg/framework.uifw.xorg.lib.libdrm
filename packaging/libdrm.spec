@@ -21,6 +21,7 @@ Requires:       kernel-headers
 Requires:       libdrm2
 Requires:       libdrm-slp1
 Requires:       libkms1
+Requires:       libdrm-intel
 
 %description devel
 Userspace interface to kernel DRM services
@@ -46,6 +47,13 @@ Group:          Development/Libraries
 %description -n libkms1
 Userspace interface to kernel DRM buffer management
 
+%package intel
+Summary:        Userspace interface to intel graphics kernel DRM buffer management
+Group:          Development/Libraries
+
+%description intel
+Userspace interface to intel graphics kernel DRM buffer management
+
 %prep
 %setup -q
 
@@ -53,7 +61,7 @@ Userspace interface to kernel DRM buffer management
 %build
 %reconfigure --prefix=%{_prefix} --mandir=%{_prefix}/share/man --infodir=%{_prefix}/share/info \
              --enable-static=yes --enable-udev --enable-libkms \
-             --disable-nouveau-experimental-api --disable-radeon --disable-intel
+             --disable-nouveau-experimental-api --disable-radeon
 
 make %{?_smp_mflags}
 
@@ -73,12 +81,15 @@ make %{?_smp_mflags}
 %post -n libkms1 -p /sbin/ldconfig
 %postun -n libkms1 -p /sbin/ldconfig
 
+%post intel -p /sbin/ldconfig
+%postun intel -p /sbin/ldconfig
 
 %files devel
 %dir %{_includedir}/libdrm
 %{_includedir}/*
 %{_libdir}/libdrm.so
 %{_libdir}/libdrm_slp.so
+%{_libdir}/libdrm_intel.so
 %{_libdir}/libkms.so
 %{_libdir}/pkgconfig/*
 
@@ -90,3 +101,6 @@ make %{?_smp_mflags}
 
 %files -n libkms1
 %{_libdir}/libkms.so.*
+
+%files intel
+%{_libdir}/libdrm_intel.so.*
