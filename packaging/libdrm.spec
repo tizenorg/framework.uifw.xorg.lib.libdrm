@@ -6,6 +6,7 @@ License:        MIT
 Summary:        Userspace interface to kernel DRM services
 Group:          System/Libraries
 Source0:        %{name}-%{version}.tar.gz
+Source1001: packaging/libdrm.manifest 
 BuildRequires:  kernel-headers
 BuildRequires:  pkgconfig(xorg-macros)
 BuildRequires:  pkgconfig(pthread-stubs)
@@ -59,6 +60,7 @@ Userspace interface to intel graphics kernel DRM buffer management
 
 
 %build
+cp %{SOURCE1001} .
 %reconfigure --prefix=%{_prefix} --mandir=%{_prefix}/share/man --infodir=%{_prefix}/share/info \
              --enable-static=yes --enable-udev --enable-libkms \
              --disable-nouveau-experimental-api --disable-radeon
@@ -85,6 +87,7 @@ make %{?_smp_mflags}
 %postun intel -p /sbin/ldconfig
 
 %files devel
+%manifest libdrm.manifest
 %dir %{_includedir}/libdrm
 %{_includedir}/*
 %{_libdir}/libdrm.so
@@ -94,12 +97,15 @@ make %{?_smp_mflags}
 %{_libdir}/pkgconfig/*
 
 %files -n libdrm2
+%manifest libdrm.manifest
 %{_libdir}/libdrm.so.*
 
 %files slp1
+%manifest libdrm.manifest
 %{_libdir}/libdrm_slp*.so.*
 
 %files -n libkms1
+%manifest libdrm.manifest
 %{_libdir}/libkms.so.*
 
 %files intel
