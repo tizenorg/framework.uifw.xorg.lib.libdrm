@@ -1,0 +1,2 @@
+* Fri Jun 01 2012 Peng Li <peng.li@intel.com> - 2.4.27
+- packaging: enable config option for IA device
