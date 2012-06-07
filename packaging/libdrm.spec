@@ -6,11 +6,11 @@ License:        MIT
 Summary:        Userspace interface to kernel DRM services
 Group:          System/Libraries
 Source0:        %{name}-%{version}.tar.gz
-Source1001: packaging/libdrm.manifest 
+Source1001:     libdrm.manifest
 BuildRequires:  kernel-headers
-BuildRequires:  pkgconfig(xorg-macros)
-BuildRequires:  pkgconfig(pthread-stubs)
 BuildRequires:  pkgconfig(pciaccess)
+BuildRequires:  pkgconfig(pthread-stubs)
+BuildRequires:  pkgconfig(xorg-macros)
 
 %description
 Description: %{summary}
@@ -19,19 +19,12 @@ Description: %{summary}
 Summary:        Userspace interface to kernel DRM services
 Group:          Development/Libraries
 Requires:       kernel-headers
-Requires:       libdrm2
-Requires:       libdrm-slp1
-Requires:       libkms1
+Requires:       libdrm
 Requires:       libdrm-intel
+Requires:       libdrm-slp1
+Requires:       libkms
 
 %description devel
-Userspace interface to kernel DRM services
-
-%package -n libdrm2
-Summary:        Userspace interface to kernel DRM services
-Group:          Development/Libraries
-
-%description -n libdrm2
 Userspace interface to kernel DRM services
 
 %package slp1
@@ -41,7 +34,7 @@ Group:          Development/Libraries
 %description slp1
 Userspace interface to slp-specific kernel DRM services
 
-%package -n libkms1
+%package -n libkms
 Summary:        Userspace interface to kernel DRM buffer management
 Group:          Development/Libraries
 
@@ -61,7 +54,7 @@ Userspace interface to intel graphics kernel DRM buffer management
 
 %build
 cp %{SOURCE1001} .
-%reconfigure --prefix=%{_prefix} --mandir=%{_prefix}/share/man --infodir=%{_prefix}/share/info \
+%reconfigure --prefix=%{_prefix} --mandir=%{_mandir} --infodir=%{_infodir} \
              --enable-static=yes --enable-udev --enable-libkms \
              --disable-nouveau-experimental-api --disable-radeon
 
@@ -72,19 +65,25 @@ make %{?_smp_mflags}
 
 
 %post -p /sbin/ldconfig
+
 %postun -p /sbin/ldconfig
 
-%post -n libdrm2 -p /sbin/ldconfig
-%postun -n libdrm2 -p /sbin/ldconfig
 
 %post slp1 -p /sbin/ldconfig
+
 %postun slp1  -p /sbin/ldconfig
 
-%post -n libkms1 -p /sbin/ldconfig
-%postun -n libkms1 -p /sbin/ldconfig
+%post -n libkms -p /sbin/ldconfig
+
+%postun -n libkms -p /sbin/ldconfig
 
 %post intel -p /sbin/ldconfig
+
 %postun intel -p /sbin/ldconfig
+
+%files
+%manifest libdrm.manifest
+%{_libdir}/libdrm.so.*
 
 %files devel
 %manifest libdrm.manifest
@@ -96,17 +95,15 @@ make %{?_smp_mflags}
 %{_libdir}/libkms.so
 %{_libdir}/pkgconfig/*
 
-%files -n libdrm2
-%manifest libdrm.manifest
-%{_libdir}/libdrm.so.*
 
 %files slp1
 %manifest libdrm.manifest
 %{_libdir}/libdrm_slp*.so.*
 
-%files -n libkms1
+%files -n libkms
 %manifest libdrm.manifest
 %{_libdir}/libkms.so.*
 
 %files intel
+%manifest libdrm.manifest
 %{_libdir}/libdrm_intel.so.*

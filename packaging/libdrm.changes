@@ -1,2 +1,32 @@
-* Fri Jun 01 2012 Peng Li <peng.li@intel.com> - 2.4.27
+* Thu Jun 07 2012 Anas Nashif <anas.nashif@intel.com> 261433b
+- remove duplicate and versioned package naming
+
+* Wed Jun 06 2012 Auke Kok <auke-jan.h.kok@intel.com> 86e78e2
+- Merge "add changelog entry"
+
+* Fri Jun 01 2012 Li Peng <peng.li@intel.com> fd6a960
+- add changelog entry
+
+* Wed May 30 2012 Ryan Ware <ryan.r.ware@intel.com> 4be908f
+- Add default Smack manifest for libdrm.spec
+
+* Fri May 25 2012 Li Peng <peng.li@intel.com> 5c6d6c5
 - packaging: enable config option for IA device
+
+* Mon Apr 30 2012 Kim Kibum <kb0929.kim@samsung.com> ecc3294
+- update source
+
+* Sun Apr 29 2012 Kim Kibum <kb0929.kim@samsung.com> bdf4fca
+- upload tizen1.0 source
+
+* Wed Mar 14 2012 Yan Yin <yan.yin@intel.com> c4d95d8
+- update for beta universally
+
+* Fri Feb 17 2012 Boram Park <boram1288.park@samsung.com> 919ae34
+- Add additional dif
+
+* Fri Jan 06 2012 Kibum Kim <kb0929.kim@samsung.com> e925415
+- Git init
+[ Eunkyoung Kim ]
+- Initial empty repository
+
