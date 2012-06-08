@@ -38,7 +38,7 @@ Userspace interface to slp-specific kernel DRM services
 Summary:        Userspace interface to kernel DRM buffer management
 Group:          Development/Libraries
 
-%description -n libkms1
+%description -n libkms
 Userspace interface to kernel DRM buffer management
 
 %package intel

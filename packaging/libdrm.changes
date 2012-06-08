@@ -1,3 +1,9 @@
+* Fri Jun 08 2012 Anas Nashif <anas.nashif@intel.com> 6756292
+- fixed forgotten wrong package name with version
+
+* Thu Jun 07 2012 Anas Nashif <anas.nashif@intel.com> 84d9ea1
+- remove duplicate and versioned package naming
+
 * Thu Jun 07 2012 Anas Nashif <anas.nashif@intel.com> 261433b
 - remove duplicate and versioned package naming
 
