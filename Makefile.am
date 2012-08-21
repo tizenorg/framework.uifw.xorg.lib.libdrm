@@ -41,11 +41,19 @@ if HAVE_RADEON
 RADEON_SUBDIR = radeon
 endif
 
+if HAVE_OMAP
+OMAP_SUBDIR = omap
+endif
+
+if HAVE_EXYNOS
+EXYNOS_SUBDIR = exynos
+endif
+
 if HAVE_SLP
 SLP_SUBDIR = slp
 endif
 
-SUBDIRS = . $(LIBKMS_SUBDIR) $(INTEL_SUBDIR) $(NOUVEAU_SUBDIR) $(RADEON_SUBDIR) $(SLP_SUBDIR) tests include
+SUBDIRS = . $(LIBKMS_SUBDIR) $(INTEL_SUBDIR) $(NOUVEAU_SUBDIR) $(RADEON_SUBDIR) $(OMAP_SUBDIR) $(EXYNOS_SUBDIR) $(SLP_SUBDIR) tests include
 
 libdrm_la_LTLIBRARIES = libdrm.la
 libdrm_ladir = $(libdir)

@@ -1,6 +1,8 @@
 usr/include/*
+usr/include/exynos/*
 usr/lib/lib*.a
 usr/lib/lib*.la
 usr/lib/libdrm.so
+usr/lib/libdrm_exynos.so
 usr/lib/libdrm_slp.so
 usr/lib/pkgconfig/*

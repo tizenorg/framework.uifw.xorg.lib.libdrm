@@ -33,6 +33,7 @@ endif
 
 if HAVE_SLP
 libkms_la_SOURCES += slp.c
+AM_CFLAGS += -I$(top_srcdir)/exynos
 endif
 
 libkmsincludedir = ${includedir}/libkms

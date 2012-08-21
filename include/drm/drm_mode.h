@@ -162,6 +162,7 @@ struct drm_mode_get_plane_res {
 #define DRM_MODE_ENCODER_TMDS	2
 #define DRM_MODE_ENCODER_LVDS	3
 #define DRM_MODE_ENCODER_TVDAC	4
+#define DRM_MODE_ENCODER_VIRTUAL	5
 
 struct drm_mode_get_encoder {
 	__u32 encoder_id;
@@ -199,6 +200,7 @@ struct drm_mode_get_encoder {
 #define DRM_MODE_CONNECTOR_HDMIB	12
 #define DRM_MODE_CONNECTOR_TV		13
 #define DRM_MODE_CONNECTOR_eDP		14
+#define DRM_MODE_CONNECTOR_VIRTUAL	15
 
 struct drm_mode_get_connector {
 
@@ -226,6 +228,7 @@ struct drm_mode_get_connector {
 #define DRM_MODE_PROP_IMMUTABLE	(1<<2)
 #define DRM_MODE_PROP_ENUM	(1<<3) /* enumerated type with text strings */
 #define DRM_MODE_PROP_BLOB	(1<<4)
+#define DRM_MODE_PROP_BITMASK	(1<<5) /* bitmask of enumerated types */
 
 struct drm_mode_property_enum {
 	__u64 value;
@@ -248,6 +251,30 @@ struct drm_mode_connector_set_property {
 	__u64 value;
 	__u32 prop_id;
 	__u32 connector_id;
+};
+
+#define DRM_MODE_OBJECT_CRTC 0xcccccccc
+#define DRM_MODE_OBJECT_CONNECTOR 0xc0c0c0c0
+#define DRM_MODE_OBJECT_ENCODER 0xe0e0e0e0
+#define DRM_MODE_OBJECT_MODE 0xdededede
+#define DRM_MODE_OBJECT_PROPERTY 0xb0b0b0b0
+#define DRM_MODE_OBJECT_FB 0xfbfbfbfb
+#define DRM_MODE_OBJECT_BLOB 0xbbbbbbbb
+#define DRM_MODE_OBJECT_PLANE 0xeeeeeeee
+
+struct drm_mode_obj_get_properties {
+	__u64 props_ptr;
+	__u64 prop_values_ptr;
+	__u32 count_props;
+	__u32 obj_id;
+	__u32 obj_type;
+};
+
+struct drm_mode_obj_set_property {
+	__u64 value;
+	__u32 prop_id;
+	__u32 obj_id;
+	__u32 obj_type;
 };
 
 struct drm_mode_get_blob {
@@ -341,7 +368,7 @@ struct drm_mode_mode_cmd {
 #define DRM_MODE_CURSOR_MOVE	(1<<1)
 
 /*
- * depending on the value in flags different members are used.
+ * depending on the value in flags diffrent members are used.
  *
  * CURSOR_BO uses
  *    crtc
@@ -410,31 +437,31 @@ struct drm_mode_crtc_page_flip {
 
 /* create a dumb scanout buffer */
 struct drm_mode_create_dumb {
-	uint32_t height;
-	uint32_t width;
-	uint32_t bpp;
-	uint32_t flags;
-	/* handle, pitch, size will be returned */
-	uint32_t handle;
-	uint32_t pitch;
-	uint64_t size;
+        __u32 height;
+        __u32 width;
+        __u32 bpp;
+        __u32 flags;
+        /* handle, pitch, size will be returned */
+        __u32 handle;
+        __u32 pitch;
+        __u64 size;
 };
 
 /* set up for mmap of a dumb scanout buffer */
 struct drm_mode_map_dumb {
-	/** Handle for the object being mapped. */
-	__u32 handle;
-	__u32 pad;
-	/**
-	 * Fake offset to use for subsequent mmap call
-	 *
-	 * This is a fixed-size type for 32/64 compatibility.
-	 */
-	__u64 offset;
+        /** Handle for the object being mapped. */
+        __u32 handle;
+        __u32 pad;
+        /**
+         * Fake offset to use for subsequent mmap call
+         *
+         * This is a fixed-size type for 32/64 compatibility.
+         */
+        __u64 offset;
 };
 
 struct drm_mode_destroy_dumb {
-	uint32_t handle;
+	__u32 handle;
 };
 
 #endif

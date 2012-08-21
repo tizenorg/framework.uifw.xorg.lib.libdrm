@@ -10,13 +10,16 @@ check_PROGRAMS = \
 	dristat \
 	drmstat
 
-SUBDIRS = modeprint
+SUBDIRS = modeprint proptest
 
 if HAVE_LIBKMS
-SUBDIRS += kmstest modetest planetest
+SUBDIRS += kmstest modetest
 endif
 
+SUBDIRS += ipptest
+SUBDIRS += rottest
 SUBDIRS += gemtest
+SUBDIRS += g2dtest
 
 if HAVE_RADEON
 SUBDIRS += radeon

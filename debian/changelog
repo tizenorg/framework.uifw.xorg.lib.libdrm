@@ -1,3 +1,91 @@
+libdrm (2.4.35-1slp2) unstable; urgency=low
+
+  * upgrade to 2.4.35
+  * Git: slp/pkgs/xorg/lib/libdrm
+  * Tag: libdrm_2.4.35-1slp2
+
+ -- Boram Park <boram1288.park@samsung.com>  Mon, 11 Jun 2012 18:58:07 +0900
+
+libdrm (2.4.33-5slp2) unstable; urgency=low
+
+  * update changelog
+  * Git: slp/pkgs/xorg/lib/libdrm
+  * Tag: libdrm_2.4.33-5slp2
+
+ -- Boram Park <boram1288.park@samsung.com>  Tue, 29 May 2012 20:33:15 +0900
+
+libdrm (2.4.33-4slp2) unstable; urgency=low
+
+  * update for cacheflush
+  * Git: slp/pkgs/xorg/lib/libdrm
+  * Tag: libdrm_2.4.33-4slp2
+
+ -- Boram Park <boram1288.park@samsung.com>  Mon, 30 Apr 2012 16:46:47 +0900
+
+libdrm (2.4.33-3slp2) unstable; urgency=low
+
+  * fix : wrong condition
+  * Git: slp/pkgs/xorg/lib/libdrm
+  * Tag: libdrm_2.4.33-3slp2
+
+ -- Boram Park <boram1288.park@samsung.com>  Thu, 26 Apr 2012 15:10:55 +0900
+
+libdrm (2.4.33-2slp2) unstable; urgency=low
+
+  * update changelog
+  * Git: slp/pkgs/xorg/lib/libdrm
+  * Tag: libdrm_2.4.33-2slp2
+
+ -- Boram Park <boram1288.park@samsung.com>  Thu, 26 Apr 2012 11:06:32 +0900
+
+libdrm (2.4.33-1slp2) unstable; urgency=low
+
+  * version upgrade to 2.4.33
+  * Git: slp/pkgs/xorg/lib/libdrm
+  * Tag: libdrm_2.4.33-1slp2
+
+ -- Boram Park <boram1288.park@samsung.com>  Wed, 25 Apr 2012 11:38:37 +0900
+
+libdrm (2.4.27-18slp2) unstable; urgency=low
+
+  * update exynos_drm.h
+  * Git: slp/pkgs/xorg/lib/libdrm
+  * Tag: libdrm_2.4.27-18slp2
+
+ -- Boram Park <boram1288.park@samsung.com>  Thu, 29 Mar 2012 16:58:17 +0900
+
+libdrm (2.4.27-17slp2) unstable; urgency=low
+
+  * fix exynos_drm.h
+  * Git: slp/pkgs/xorg/lib/libdrm
+  * Tag: libdrm_2.4.27-17slp2
+
+ -- SooChan Lim <sc1.lim@samsung.com>  Thu, 22 Mar 2012 20:33:18 +0900
+
+libdrm (2.4.27-16slp2) unstable; urgency=low
+
+  * update exynos_drm.h
+  * Git: slp/pkgs/xorg/lib/libdrm
+  * Tag: libdrm_2.4.27-16slp2
+
+ -- SooChan Lim <sc1.lim@samsung.com>  Thu, 22 Mar 2012 20:00:05 +0900
+
+libdrm (2.4.27-15slp2) unstable; urgency=low
+
+  * update exynos_drm.h
+  * Git: slp/pkgs/xorg/lib/libdrm
+  * Tag: libdrm_2.4.27-15slp2
+
+ -- SooChan Lim <sc1.lim@samsung.com>  Wed, 07 Mar 2012 13:16:38 +0900
+
+libdrm (2.4.27-14slp2) unstable; urgency=low
+
+  * update headers for g2d and virtual output
+  * Git: slp/pkgs/xorg/lib/libdrm
+  * Tag: libdrm_2.4.27-14slp2
+
+ -- SooChan Lim <sc1.lim@samsung.com>  Fri, 17 Feb 2012 15:19:47 +0900
+
 libdrm (2.4.27-13slp2) unstable; urgency=low
 
   * patch from kernel : add virtual display for wireless display

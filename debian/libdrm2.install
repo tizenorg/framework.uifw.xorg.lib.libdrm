@@ -1,1 +1,2 @@
 usr/lib/libdrm.so.* /usr/lib
+usr/lib/libdrm_exynos.so.* /usr/lib

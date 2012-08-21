@@ -1,7 +1,7 @@
 #sbs-git:slp/pkgs/xorg/lib/libdrm libdrm 2.4.27 4df9ab272d6eac089f89ecd9302d39263541a794
 Name:           libdrm
-Version:        2.4.27
-Release:        4
+Version:        2.4.35
+Release:        1
 License:        MIT
 Summary:        Userspace interface to kernel DRM services
 Group:          System/Libraries
@@ -9,7 +9,6 @@ Source0:        %{name}-%{version}.tar.gz
 BuildRequires:  kernel-headers
 BuildRequires:  pkgconfig(xorg-macros)
 BuildRequires:  pkgconfig(pthread-stubs)
-BuildRequires:  pkgconfig(pciaccess)
 
 %description
 Description: %{summary}
@@ -52,8 +51,8 @@ Userspace interface to kernel DRM buffer management
 
 %build
 %reconfigure --prefix=%{_prefix} --mandir=%{_prefix}/share/man --infodir=%{_prefix}/share/info \
-             --enable-static=yes --enable-udev --enable-libkms \
-             --disable-nouveau-experimental-api --disable-radeon --disable-intel
+             --enable-static=yes --enable-udev --enable-libkms --enable-exynos-experimental-api \
+             --disable-nouveau --disable-radeon --disable-intel
 
 make %{?_smp_mflags}
 
@@ -77,13 +76,16 @@ make %{?_smp_mflags}
 %files devel
 %dir %{_includedir}/libdrm
 %{_includedir}/*
+%{_includedir}/exynos/*
 %{_libdir}/libdrm.so
 %{_libdir}/libdrm_slp.so
+%{_libdir}/libdrm_exynos.so
 %{_libdir}/libkms.so
 %{_libdir}/pkgconfig/*
 
 %files -n libdrm2
 %{_libdir}/libdrm.so.*
+%{_libdir}/libdrm_exynos.so.*
 
 %files slp1
 %{_libdir}/libdrm_slp*.so.*

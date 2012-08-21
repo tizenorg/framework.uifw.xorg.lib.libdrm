@@ -43,6 +43,7 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include <errno.h>
 
 #include "drm_slp_bufmgr.h"
+#include "list.h"
 
 #define PREFIX_LIB    "libdrm_slp_"
 #define SUFFIX_LIB    ".so"
@@ -52,12 +53,25 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #define SEM_NAME		"pixmap_1"
 #define SEM_DEBUG 0
 
+#define DRM_RETURN_IF_FAIL(cond)          {if (!(cond)) { fprintf (stderr, "[%s] : '%s' failed.\n", __FUNCTION__, #cond); return; }}
+#define DRM_RETURN_VAL_IF_FAIL(cond, val) {if (!(cond)) { fprintf (stderr, "[%s] : '%s' failed.\n", __FUNCTION__, #cond); return val; }}
+
+#define MGR_IS_VALID(mgr) (mgr && \
+                                                mgr->link.next && \
+                                                mgr->link.next->prev == &mgr->link)
+#define BO_IS_VALID(bo) (bo && \
+                                            MGR_IS_VALID(bo->bufmgr) && \
+                                            bo->list.next && \
+                                            bo->list.next->prev == &bo->list)
+
 typedef struct{
 	void* data;
 
 	int is_valid;
 	drm_data_free free_func ;
 }drm_slp_user_data;
+
+static struct list_head *gBufMgrs = NULL;
 
 static int
 _sem_wait_wrapper(sem_t* sem)
@@ -243,498 +257,591 @@ _load_bufmgr(int fd, const char *file, void *arg)
 	return bufmgr;
 }
 
-drm_slp_bufmgr drm_slp_bufmgr_init(int fd, void *arg)
+drm_slp_bufmgr
+drm_slp_bufmgr_init(int fd, void *arg)
 {
-	drm_slp_bufmgr bufmgr = NULL;
-	const char *p = NULL;
+    drm_slp_bufmgr bufmgr = NULL;
+    const char *p = NULL;
 
-	if (fd < 0)
-		return NULL;
+    if (fd < 0)
+        return NULL;
 
-	p = getenv ("SLP_BUFMGR_MODULE");
-	if (p) {
-		char file[PATH_MAX] = {0,};
-		snprintf(file, sizeof(file), PREFIX_LIB"%s"SUFFIX_LIB, p);
-		bufmgr = _load_bufmgr (fd, file, arg);
-	}
+    if(gBufMgrs == NULL)
+    {
+        gBufMgrs = malloc(sizeof(struct list_head));
+        LIST_INITHEAD(gBufMgrs);
+    }
+    else
+    {
+        LIST_FOR_EACH_ENTRY(bufmgr, gBufMgrs, link)
+        {
+            if(bufmgr->drm_fd == fd)
+            {
+                bufmgr->ref_count++;
+                fprintf(stderr, "[libdrm] bufmgr ref: fd=%d, ref_count:%d\n", fd, bufmgr->ref_count);
+                return bufmgr;
+            }
+        }
+        bufmgr = NULL;
+    }
+    fprintf(stderr, "[libdrm] bufmgr init: fd=%d\n", fd);
 
-	if (!bufmgr)
-		bufmgr = _load_bufmgr (fd, DEFAULT_LIB, arg);
+    p = getenv ("SLP_BUFMGR_MODULE");
+    if (p)
+    {
+        char file[PATH_MAX] = {0,};
+        snprintf(file, sizeof(file), PREFIX_LIB"%s"SUFFIX_LIB, p);
+        bufmgr = _load_bufmgr (fd, file, arg);
+    }
 
-	if (!bufmgr) {
-		struct dirent **namelist;
-		int found = 0;
-		int n;
+    if (!bufmgr)
+        bufmgr = _load_bufmgr (fd, DEFAULT_LIB, arg);
 
-		n = scandir(BUFMGR_DIR, &namelist, 0, alphasort);
-		if (n < 0)
-			fprintf(stderr,"[libdrm] no files : %s\n", BUFMGR_DIR);
-		else {
-			while(n--) {
-				if (!found && strstr (namelist[n]->d_name, PREFIX_LIB)) {
-					char *p = strstr (namelist[n]->d_name, SUFFIX_LIB);
-					if (!strcmp (p, SUFFIX_LIB))
-					{
-						bufmgr = _load_bufmgr (fd, namelist[n]->d_name, arg);
-						if (bufmgr)
-							found = 1;
-					}
-				}
-				free(namelist[n]);
-			}
-			free(namelist);
-		}
-	}
+    if (!bufmgr)
+    {
+        struct dirent **namelist;
+        int found = 0;
+        int n;
 
-	if (!bufmgr)
-	{
-		fprintf(stderr,"[libdrm] backend is NULL.\n");
-		return NULL;
-	}
+        n = scandir(BUFMGR_DIR, &namelist, 0, alphasort);
+        if (n < 0)
+            fprintf(stderr,"[libdrm] no files : %s\n", BUFMGR_DIR);
+        else
+        {
+            while(n--)
+            {
+                if (!found && strstr (namelist[n]->d_name, PREFIX_LIB))
+                {
+                    char *p = strstr (namelist[n]->d_name, SUFFIX_LIB);
+                    if (!strcmp (p, SUFFIX_LIB))
+                    {
+                        bufmgr = _load_bufmgr (fd, namelist[n]->d_name, arg);
+                        if (bufmgr)
+                            found = 1;
+                    }
+                }
+                free(namelist[n]);
+            }
+            free(namelist);
+        }
+    }
 
-	if (pthread_mutex_init(&bufmgr->lock, NULL) != 0) {
-		bufmgr->bufmgr_destroy(bufmgr);
-		free(bufmgr);
-		return NULL;
-	}
+    if (!bufmgr)
+    {
+        fprintf(stderr,"[libdrm] backend is NULL.\n");
+        return NULL;
+    }
 
-	return bufmgr;
+    if (pthread_mutex_init(&bufmgr->lock, NULL) != 0)
+    {
+        bufmgr->bufmgr_destroy(bufmgr);
+        free(bufmgr);
+        return NULL;
+    }
+
+    bufmgr->ref_count = 1;
+    bufmgr->drm_fd = fd;
+
+    LIST_INITHEAD(&bufmgr->bos);
+    LIST_ADD(&bufmgr->link, gBufMgrs);
+
+    return bufmgr;
 }
 
-void drm_slp_bufmgr_destroy(drm_slp_bufmgr bufmgr)
+void
+drm_slp_bufmgr_destroy(drm_slp_bufmgr bufmgr)
 {
-	if(!bufmgr)
-		return;
+    DRM_RETURN_IF_FAIL(MGR_IS_VALID(bufmgr));
 
-	bufmgr->bufmgr_destroy(bufmgr);
+    fprintf(stderr, "[DRM] bufmgr destroy: bufmgr:%p, drm_fd:%d\n",
+                bufmgr, bufmgr->drm_fd);
 
-	if(bufmgr->semObj.isOpened)
-	{
-		_sem_close(bufmgr);
-	}
+    /*Check and Free bos*/
+    if(!LIST_IS_EMPTY(&bufmgr->bos))
+    {
+        drm_slp_bo bo, tmp;
 
-	pthread_mutex_destroy(&bufmgr->lock);
-	free(bufmgr);
+        LIST_FOR_EACH_ENTRY_SAFE(bo, tmp, &bufmgr->bos,  list)
+        {
+            fprintf(stderr, "[libdrm] Un-freed bo(%p, ref:%d) \n", bo, bo->ref_cnt);
+            bo->ref_cnt = 1;
+            drm_slp_bo_unref(bo);
+        }
+    }
+
+    LIST_DEL(&bufmgr->link);
+    bufmgr->bufmgr_destroy(bufmgr);
+
+    if(bufmgr->semObj.isOpened)
+    {
+        _sem_close(bufmgr);
+    }
+
+    pthread_mutex_destroy(&bufmgr->lock);
+    free(bufmgr);
 }
 
-int drm_slp_bufmgr_lock(drm_slp_bufmgr bufmgr)
+int
+drm_slp_bufmgr_lock(drm_slp_bufmgr bufmgr)
 {
-	if(!bufmgr)
-		return 0;
+    DRM_RETURN_VAL_IF_FAIL(MGR_IS_VALID(bufmgr), 0);
 
-	pthread_mutex_lock(&bufmgr->lock);
+    pthread_mutex_lock(&bufmgr->lock);
 
-	if(!bufmgr->semObj.isOpened)
-	{
-		if(_sem_open(bufmgr) != 1)
-		{
-			pthread_mutex_unlock(&bufmgr->lock);
-			return 0;
-		}
-		bufmgr->semObj.isOpened = 1;
-	}
+    if(bufmgr->bufmgr_lock)
+    {
+        int ret;
+        ret = bufmgr->bufmgr_lock(bufmgr);
+        pthread_mutex_unlock(&bufmgr->lock);
+        return ret;
+    }
 
-	if(_sem_lock(bufmgr) != 1)
-	{
-		pthread_mutex_unlock(&bufmgr->lock);
-		return 0;
-	}
+    if(!bufmgr->semObj.isOpened)
+    {
+        if(_sem_open(bufmgr) != 1)
+        {
+            pthread_mutex_unlock(&bufmgr->lock);
+            return 0;
+        }
+        bufmgr->semObj.isOpened = 1;
+    }
 
-	pthread_mutex_unlock(&bufmgr->lock);
+    if(_sem_lock(bufmgr) != 1)
+    {
+        pthread_mutex_unlock(&bufmgr->lock);
+        return 0;
+    }
 
-	return 1;
+    pthread_mutex_unlock(&bufmgr->lock);
+
+    return 1;
 }
 
-int drm_slp_bufmgr_unlock(drm_slp_bufmgr bufmgr)
+int
+drm_slp_bufmgr_unlock(drm_slp_bufmgr bufmgr)
 {
-	if(!bufmgr)
-		return 0;
+    DRM_RETURN_VAL_IF_FAIL(MGR_IS_VALID(bufmgr), 0);
 
-	pthread_mutex_lock(&bufmgr->lock);
+    pthread_mutex_lock(&bufmgr->lock);
 
-	if(_sem_unlock(bufmgr) != 1)
-	{
-		pthread_mutex_unlock(&bufmgr->lock);
-		return 0;
-	}
+    if(bufmgr->bufmgr_unlock)
+    {
+        int ret;
+        ret = bufmgr->bufmgr_unlock(bufmgr);
+        pthread_mutex_unlock(&bufmgr->lock);
+        return ret;
+    }
 
-	pthread_mutex_unlock(&bufmgr->lock);
+    if(_sem_unlock(bufmgr) != 1)
+    {
+        pthread_mutex_unlock(&bufmgr->lock);
+        return 0;
+    }
 
-	return 1;
+    pthread_mutex_unlock(&bufmgr->lock);
+
+    return 1;
 }
 
-int drm_slp_bufmgr_cache_flush(drm_slp_bufmgr bufmgr, drm_slp_bo bo, int flags)
+int
+drm_slp_bufmgr_cache_flush(drm_slp_bufmgr bufmgr, drm_slp_bo bo, int flags)
 {
-	int ret;
+    int ret;
 
-	if (!bufmgr && !bo)
-		return 0;
+    DRM_RETURN_VAL_IF_FAIL(MGR_IS_VALID(bufmgr) || BO_IS_VALID(bo), 0);
 
-	if (!bo)
-		flags |= DRM_SLP_CACHE_ALL;
+    if (!bo)
+        flags |= DRM_SLP_CACHE_ALL;
 
-	if (bo)
-	{
-		if(!bo->bufmgr)
-			return 0;
+    if (bo)
+    {
+        DRM_RETURN_VAL_IF_FAIL(BO_IS_VALID(bo), 0);
 
-		pthread_mutex_lock(&bo->bufmgr->lock);
-		ret = bo->bufmgr->bufmgr_cache_flush(bufmgr, bo, flags);
-		pthread_mutex_unlock(&bo->bufmgr->lock);
-	}
-	else
-	{
-		pthread_mutex_lock(&bufmgr->lock);
-		ret = bufmgr->bufmgr_cache_flush(bufmgr, NULL, flags);
-		pthread_mutex_unlock(&bufmgr->lock);
-	}
+        if(!bo->bufmgr)
+            return 0;
 
-	return ret;
+        pthread_mutex_lock(&bo->bufmgr->lock);
+        ret = bo->bufmgr->bufmgr_cache_flush(bufmgr, bo, flags);
+        pthread_mutex_unlock(&bo->bufmgr->lock);
+    }
+    else
+    {
+        pthread_mutex_lock(&bufmgr->lock);
+        ret = bufmgr->bufmgr_cache_flush(bufmgr, NULL, flags);
+        pthread_mutex_unlock(&bufmgr->lock);
+    }
+
+    return ret;
 }
 
-int drm_slp_bo_size(drm_slp_bo bo)
+int
+drm_slp_bo_size(drm_slp_bo bo)
 {
-	int size;
-	drm_slp_bufmgr bufmgr;
+    int size;
+    drm_slp_bufmgr bufmgr;
 
-	if(!bo || !bo->bufmgr)
-		return 0;
-	bufmgr = bo->bufmgr;
+    DRM_RETURN_VAL_IF_FAIL(BO_IS_VALID(bo), 0);
 
-	pthread_mutex_lock(&bufmgr->lock);
-	size = bo->bufmgr->bo_size(bo);
-	pthread_mutex_unlock(&bufmgr->lock);
+    bufmgr = bo->bufmgr;
 
-	return size;
+    pthread_mutex_lock(&bufmgr->lock);
+    size = bo->bufmgr->bo_size(bo);
+    pthread_mutex_unlock(&bufmgr->lock);
+
+    return size;
 }
 
-drm_slp_bo drm_slp_bo_ref(drm_slp_bo bo)
+drm_slp_bo
+drm_slp_bo_ref(drm_slp_bo bo)
 {
-	drm_slp_bufmgr bufmgr;
+    drm_slp_bufmgr bufmgr;
 
-	if(!bo || !bo->bufmgr)
-		return NULL;
-	bufmgr = bo->bufmgr;
+    DRM_RETURN_VAL_IF_FAIL(BO_IS_VALID(bo), NULL);
 
-	pthread_mutex_lock(&bufmgr->lock);
+    bufmgr = bo->bufmgr;
 
-	bo->ref_cnt++;
+    pthread_mutex_lock(&bufmgr->lock);
 
-	pthread_mutex_unlock(&bufmgr->lock);
+    bo->ref_cnt++;
 
-	return bo;
+    pthread_mutex_unlock(&bufmgr->lock);
+
+    return bo;
 }
 
-void drm_slp_bo_unref(drm_slp_bo bo)
+void
+drm_slp_bo_unref(drm_slp_bo bo)
 {
-	drm_slp_bufmgr bufmgr;
+    drm_slp_bufmgr bufmgr;
 
-	if(!bo || !bo->bufmgr)
-		return;
-	bufmgr = bo->bufmgr;
+    DRM_RETURN_IF_FAIL(BO_IS_VALID(bo));
 
-	pthread_mutex_lock(&bufmgr->lock);
+    bufmgr = bo->bufmgr;
 
-	if(0 >= bo->ref_cnt)
-		return;
-	bo->ref_cnt--;
-	if(bo->ref_cnt == 0)
-	{
-		bufmgr->bo_free(bo);
+    if(0 >= bo->ref_cnt)
+        return;
 
-		if(bo->user_data)
-		{
-			void* rd;
-			drm_slp_user_data* old_data;
-			unsigned long key;
+    pthread_mutex_lock(&bufmgr->lock);
 
-			while(1==drmSLFirst(bo->user_data, &key, &rd))
-			{
-				old_data = (drm_slp_user_data*)rd;
+    bo->ref_cnt--;
+    if(bo->ref_cnt == 0)
+    {
+        if(bo->user_data)
+        {
+            void* rd;
+            drm_slp_user_data* old_data;
+            unsigned long key;
 
-				if(old_data->is_valid && old_data->free_func)
-				{
-					if(old_data->data)
-					    old_data->free_func(old_data->data);
-					old_data->data = NULL;
-					free(old_data);
-				}
-				drmSLDelete(bo->user_data, key);
-			}
+            while(1==drmSLFirst(bo->user_data, &key, &rd))
+            {
+                old_data = (drm_slp_user_data*)rd;
 
-			drmSLDestroy(bo->user_data);
-			bo->user_data = (void*)0;
-		}
+                if(old_data->is_valid && old_data->free_func)
+                {
+                    if(old_data->data)
+                        old_data->free_func(old_data->data);
+                    old_data->data = NULL;
+                    free(old_data);
+                }
+                drmSLDelete(bo->user_data, key);
+            }
 
-		free(bo);
-	}
+            drmSLDestroy(bo->user_data);
+            bo->user_data = (void*)0;
+        }
 
-	pthread_mutex_unlock(&bufmgr->lock);
+        LIST_DEL(&bo->list);
+        bufmgr->bo_free(bo);
+
+        free(bo);
+    }
+
+    pthread_mutex_unlock(&bufmgr->lock);
 }
 
-drm_slp_bo drm_slp_bo_alloc(drm_slp_bufmgr bufmgr, const char * name, int size)
+drm_slp_bo
+drm_slp_bo_alloc(drm_slp_bufmgr bufmgr, const char * name, int size, int flags)
 {
-	drm_slp_bo bo=NULL;
+    drm_slp_bo bo=NULL;
 
-	if(!bufmgr || size <= 0)
-		return NULL;
+    DRM_RETURN_VAL_IF_FAIL( MGR_IS_VALID(bufmgr) && (size > 0), NULL);
 
-	bo = calloc(sizeof(struct _drm_slp_bo), 1);
-	if(!bo)
-		return NULL;
+    bo = calloc(sizeof(struct _drm_slp_bo), 1);
+    if(!bo)
+        return NULL;
 
-	bo->bufmgr = bufmgr;
+    bo->bufmgr = bufmgr;
 
-	pthread_mutex_lock(&bufmgr->lock);
-	if(!bufmgr->bo_alloc(bo, name, size))
-	{
-		free(bo);
-		pthread_mutex_unlock(&bufmgr->lock);
-		return NULL;
-	}
-	bo->ref_cnt = 1;
-	pthread_mutex_unlock(&bufmgr->lock);
+    pthread_mutex_lock(&bufmgr->lock);
+    if(!bufmgr->bo_alloc(bo, name, size, flags))
+    {
+        free(bo);
+        pthread_mutex_unlock(&bufmgr->lock);
+        return NULL;
+    }
+    bo->ref_cnt = 1;
+    LIST_ADD(&bo->list, &bufmgr->bos);
+    pthread_mutex_unlock(&bufmgr->lock);
 
-	return bo;
+    return bo;
 }
 
-drm_slp_bo drm_slp_bo_attach(drm_slp_bufmgr bufmgr,
+drm_slp_bo
+drm_slp_bo_attach(drm_slp_bufmgr bufmgr,
                              const char*    name,
-                             void*          ptr,
-                             int            size,
-                             void*          native_handle)
+                             int type,
+                             int size,
+                             unsigned int handle)
 {
-	drm_slp_bo bo;
+    drm_slp_bo bo;
 
-	if(!bufmgr)
-		return NULL;
+    DRM_RETURN_VAL_IF_FAIL(MGR_IS_VALID(bufmgr), NULL);
 
-	bo = calloc(sizeof(struct _drm_slp_bo), 1);
-	if(!bo)
-		return NULL;
+    bo = calloc(sizeof(struct _drm_slp_bo), 1);
+    if(!bo)
+        return NULL;
 
-	bo->bufmgr = bufmgr;
+    bo->bufmgr = bufmgr;
 
-	pthread_mutex_lock(&bufmgr->lock);
-	if(!bufmgr->bo_attach(bo, name, ptr, size, native_handle))
-	{
-		free(bo);
-		pthread_mutex_unlock(&bufmgr->lock);
-		return NULL;
-	}
-	bo->ref_cnt = 1;
-	pthread_mutex_unlock(&bufmgr->lock);
+    pthread_mutex_lock(&bufmgr->lock);
+    if(!bufmgr->bo_attach(bo, name, type, size, handle))
+    {
+        free(bo);
+        pthread_mutex_unlock(&bufmgr->lock);
+        return NULL;
+    }
+    bo->ref_cnt = 1;
+    LIST_ADD(&bo->list, &bufmgr->bos);
+    pthread_mutex_unlock(&bufmgr->lock);
 
-	return bo;
+    return bo;
 }
 
-drm_slp_bo drm_slp_bo_import(drm_slp_bufmgr bufmgr, unsigned int key)
+drm_slp_bo
+drm_slp_bo_import(drm_slp_bufmgr bufmgr, unsigned int key)
 {
-	drm_slp_bo bo;
+    drm_slp_bo bo;
 
-	if(!bufmgr)
-		return NULL;
+    DRM_RETURN_VAL_IF_FAIL(MGR_IS_VALID(bufmgr), NULL);
 
-	bo = calloc(sizeof(struct _drm_slp_bo), 1);
-	if(!bo)
-		return NULL;
+    bo = calloc(sizeof(struct _drm_slp_bo), 1);
+    if(!bo)
+        return NULL;
 
-	bo->bufmgr = bufmgr;
+    bo->bufmgr = bufmgr;
 
-	pthread_mutex_lock(&bufmgr->lock);
-	if(!bufmgr->bo_import(bo, key))
-	{
-		free(bo);
-		pthread_mutex_unlock(&bufmgr->lock);
-		return NULL;
-	}
-	bo->ref_cnt = 1;
-	pthread_mutex_unlock(&bufmgr->lock);
+    pthread_mutex_lock(&bufmgr->lock);
+    if(!bufmgr->bo_import(bo, key))
+    {
+        free(bo);
+        pthread_mutex_unlock(&bufmgr->lock);
+        return NULL;
+    }
+    bo->ref_cnt = 1;
+    LIST_ADD(&bo->list, &bufmgr->bos);
+    pthread_mutex_unlock(&bufmgr->lock);
 
-	return bo;
+    return bo;
 }
 
-unsigned int drm_slp_bo_export(drm_slp_bo bo)
+unsigned int
+drm_slp_bo_export(drm_slp_bo bo)
 {
-	int ret;
+    int ret;
 
-	if(!bo || !bo->bufmgr)
-		return 0;
+    DRM_RETURN_VAL_IF_FAIL(BO_IS_VALID(bo), 0);
 
-	pthread_mutex_lock(&bo->bufmgr->lock);
-	ret = bo->bufmgr->bo_export(bo);
-	pthread_mutex_unlock(&bo->bufmgr->lock);
+    pthread_mutex_lock(&bo->bufmgr->lock);
+    ret = bo->bufmgr->bo_export(bo);
+    pthread_mutex_unlock(&bo->bufmgr->lock);
 
-	return ret;
+    return ret;
 }
 
-void * drm_slp_bo_map(drm_slp_bo bo, int device, int opt)
+unsigned int
+drm_slp_bo_get_handle(drm_slp_bo bo, int device)
 {
-	void* ret;
+    unsigned int ret;
 
-	if(!bo || !bo->bufmgr)
-		return 0;
+    DRM_RETURN_VAL_IF_FAIL(BO_IS_VALID(bo), 0);
 
-	pthread_mutex_lock(&bo->bufmgr->lock);
-	ret = bo->bufmgr->bo_map(bo, device, opt);
-	pthread_mutex_unlock(&bo->bufmgr->lock);
+    pthread_mutex_lock(&bo->bufmgr->lock);
+    ret = bo->bufmgr->bo_get_handle(bo, device);
+    pthread_mutex_unlock(&bo->bufmgr->lock);
 
-	return ret;
+    return ret;
 }
 
-int drm_slp_bo_unmap(drm_slp_bo bo, int device)
+unsigned int
+drm_slp_bo_map(drm_slp_bo bo, int device, int opt)
 {
-	int ret;
+    unsigned int ret;
 
-	if(!bo || !bo->bufmgr)
-		return 0;
+    DRM_RETURN_VAL_IF_FAIL(BO_IS_VALID(bo), 0);
 
-	pthread_mutex_lock(&bo->bufmgr->lock);
-	ret = bo->bufmgr->bo_unmap(bo, device);
-	pthread_mutex_unlock(&bo->bufmgr->lock);
+    pthread_mutex_lock(&bo->bufmgr->lock);
+    if(bo->bufmgr->bo_lock)
+    {
+        bo->bufmgr->bo_lock(bo, 0, (void*)0);
+    }
 
-	return 0;
+    ret = bo->bufmgr->bo_map(bo, device, opt);
+    pthread_mutex_unlock(&bo->bufmgr->lock);
+
+    return ret;
 }
 
-int drm_slp_bo_swap(drm_slp_bo bo1, drm_slp_bo bo2)
+int
+drm_slp_bo_unmap(drm_slp_bo bo, int device)
 {
-	void* temp;
+    int ret;
 
-	if(!bo1 || !bo1->bufmgr)
-		return 0;
+    DRM_RETURN_VAL_IF_FAIL(BO_IS_VALID(bo), 0);
 
-	if(!bo2 || !bo2->bufmgr)
-		return 0;
+    pthread_mutex_lock(&bo->bufmgr->lock);
+    ret = bo->bufmgr->bo_unmap(bo, device);
 
-	if(bo1->bufmgr != bo2->bufmgr)
-		return 0;
+    if(bo->bufmgr->bo_unlock)
+    {
+        bo->bufmgr->bo_unlock(bo);
+    }
+    pthread_mutex_unlock(&bo->bufmgr->lock);
 
-	if(bo1->bufmgr->bo_size(bo1) != bo2->bufmgr->bo_size(bo2))
-		return 0;
-
-	pthread_mutex_lock(&bo1->bufmgr->lock);
-	temp = bo1->private;
-	bo1->private = bo2->private;
-	bo2->private = temp;
-	pthread_mutex_unlock(&bo1->bufmgr->lock);
-
-	return 1;
+    return 0;
 }
 
-int drm_slp_bo_add_user_data(drm_slp_bo bo, unsigned long key, drm_data_free data_free_func)
+int
+drm_slp_bo_swap(drm_slp_bo bo1, drm_slp_bo bo2)
 {
-	int ret;
-	drm_slp_user_data* data;
+    void* temp;
 
-	if(!bo)
-		return 0;
+    DRM_RETURN_VAL_IF_FAIL(BO_IS_VALID(bo1), 0);
+    DRM_RETURN_VAL_IF_FAIL(BO_IS_VALID(bo2), 0);
 
-	if(!bo->user_data)
-		bo->user_data = drmSLCreate();
+    if(bo1->bufmgr->bo_size(bo1) != bo2->bufmgr->bo_size(bo2))
+        return 0;
 
-	data = calloc(1, sizeof(drm_slp_user_data));
-	if(!data)
-		return 0;
+    pthread_mutex_lock(&bo1->bufmgr->lock);
+    temp = bo1->priv;
+    bo1->priv = bo2->priv;
+    bo2->priv = temp;
+    pthread_mutex_unlock(&bo1->bufmgr->lock);
 
-	data->free_func = data_free_func;
-	data->data = (void*)0;
-	data->is_valid = 0;
-
-	ret = drmSLInsert(bo->user_data, key, data);
-	if(ret == 1) /* Already in list */
-	{
-		free(data);
-		return 0;
-	}
-
-	return 1;
+    return 1;
 }
 
-int drm_slp_bo_set_user_data(drm_slp_bo bo, unsigned long key, void* data)
+int
+drm_slp_bo_add_user_data(drm_slp_bo bo, unsigned long key, drm_data_free data_free_func)
 {
-	void *rd;
-	drm_slp_user_data* old_data;
+    int ret;
+    drm_slp_user_data* data;
 
-	if(!bo || !bo->user_data)
-		return 0;
+    DRM_RETURN_VAL_IF_FAIL(BO_IS_VALID(bo), 0);
 
-	if(drmSLLookup(bo->user_data, key, &rd))
-		return 0;
+    if(!bo->user_data)
+        bo->user_data = drmSLCreate();
 
-	old_data = (drm_slp_user_data*)rd;
-	if (!old_data)
-		return 0;
+    data = calloc(1, sizeof(drm_slp_user_data));
+    if(!data)
+        return 0;
 
-	if(old_data->is_valid)
-	{
-		if(old_data->free_func)
-		{
-			if(old_data->data)
-			    old_data->free_func(old_data->data);
-			old_data->data = NULL;
-		}
-	}
-	else
-		old_data->is_valid = 1;
+    data->free_func = data_free_func;
+    data->data = (void*)0;
+    data->is_valid = 0;
 
-	old_data->data = data;
+    ret = drmSLInsert(bo->user_data, key, data);
+    if(ret == 1) /* Already in list */
+    {
+        free(data);
+        return 0;
+    }
 
-	return 1;
+    return 1;
 }
 
-int drm_slp_bo_get_user_data(drm_slp_bo bo, unsigned long key, void** data)
+int
+drm_slp_bo_set_user_data(drm_slp_bo bo, unsigned long key, void* data)
 {
-	void *rd;
-	drm_slp_user_data* old_data;
+    void *rd;
+    drm_slp_user_data* old_data;
 
-    if(!data) return 0;
+    DRM_RETURN_VAL_IF_FAIL(BO_IS_VALID(bo), 0);
 
-	if(!bo || !bo->user_data)
-	{
-	    *data = NULL;
-		return 0;
-	}
+    if(!bo->user_data)
+        return 0;
 
-	if(drmSLLookup(bo->user_data, key, &rd))
-	{
-	    *data = NULL;
-		return 0;
-	}
+    if(drmSLLookup(bo->user_data, key, &rd))
+        return 0;
 
-	old_data = (drm_slp_user_data*)rd;
-	if (!old_data)
-	{
-	    *data = NULL;
-		return 0;
-	}
+    old_data = (drm_slp_user_data*)rd;
+    if (!old_data)
+        return 0;
 
-	*data = old_data->data;
+    if(old_data->is_valid)
+    {
+        if(old_data->free_func)
+        {
+            if(old_data->data)
+                old_data->free_func(old_data->data);
+                old_data->data = NULL;
+        }
+    }
+    else
+        old_data->is_valid = 1;
 
-	return 1;
+    old_data->data = data;
+
+    return 1;
 }
 
-int drm_slp_bo_delete_user_data(drm_slp_bo bo, unsigned long key)
+int
+drm_slp_bo_get_user_data(drm_slp_bo bo, unsigned long key, void** data)
 {
-	void *rd;
-	drm_slp_user_data* old_data=(void*)0;
+    void *rd;
+    drm_slp_user_data* old_data;
 
-	if(!bo || !bo->user_data)
-		return 0;
+    DRM_RETURN_VAL_IF_FAIL(BO_IS_VALID(bo) && data && bo->user_data, 0);
 
-	if(drmSLLookup(bo->user_data, key, &rd))
-		return 0;
+    if(drmSLLookup(bo->user_data, key, &rd))
+    {
+        *data = NULL;
+        return 0;
+    }
 
-	old_data = (drm_slp_user_data*)rd;
-	if (!old_data)
-		return 0;
+    old_data = (drm_slp_user_data*)rd;
+    if (!old_data)
+    {
+        *data = NULL;
+        return 0;
+    }
 
-	if(old_data->is_valid && old_data->free_func)
-	{
+    *data = old_data->data;
+
+    return 1;
+}
+
+int
+drm_slp_bo_delete_user_data(drm_slp_bo bo, unsigned long key)
+{
+    void *rd;
+    drm_slp_user_data* old_data=(void*)0;
+
+    DRM_RETURN_VAL_IF_FAIL(BO_IS_VALID(bo) && bo->user_data, 0);
+
+    if(drmSLLookup(bo->user_data, key, &rd))
+        return 0;
+
+    old_data = (drm_slp_user_data*)rd;
+    if (!old_data)
+        return 0;
+
+    if(old_data->is_valid && old_data->free_func)
+    {
         if(old_data->data)
-		    old_data->free_func(old_data->data);
-		free(old_data);
-	}
-	drmSLDelete(bo->user_data, key);
+            old_data->free_func(old_data->data);
+        free(old_data);
+    }
+    drmSLDelete(bo->user_data, key);
 
-	return 1;
+    return 1;
 }

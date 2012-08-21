@@ -38,7 +38,7 @@ confflags += --enable-udev
 #confflags += --disable-udev
 confflags += --enable-libkms
 LIBKMS=yes
-confflags += --disable-nouveau-experimental-api
+confflags += --disable-nouveau
 NOUVEAU = no
 confflags += --disable-radeon
 RADEON = no
@@ -86,7 +86,7 @@ obj-$(DEB_BUILD_GNU_TYPE)/config.status: configure
 	test -d obj-$(DEB_BUILD_GNU_TYPE) || mkdir obj-$(DEB_BUILD_GNU_TYPE)
 	cd obj-$(DEB_BUILD_GNU_TYPE) && \
 	../configure --prefix=/usr --mandir=\$${prefix}/share/man \
-		--infodir=\$${prefix}/share/info \
+		--infodir=\$${prefix}/share/info --enable-exynos-experimental-api \
 		--enable-static=yes $(confflags) \
 		CFLAGS="$(CFLAGS)" \
 		LDFLAGS="$(CFLAGS)"

@@ -33,6 +33,9 @@
  *
  */
 
+#ifndef _XF86DRMMODE_H_
+#define _XF86DRMMODE_H_
+
 #if defined(__cplusplus) || defined(c_plusplus)
 extern "C" {
 #endif
@@ -110,11 +113,12 @@ extern "C" {
 #define DRM_MODE_DITHERING_OFF  0
 #define DRM_MODE_DITHERING_ON   1
 
-#define DRM_MODE_ENCODER_NONE   0
-#define DRM_MODE_ENCODER_DAC    1
-#define DRM_MODE_ENCODER_TMDS   2
-#define DRM_MODE_ENCODER_LVDS   3
-#define DRM_MODE_ENCODER_TVDAC  4
+#define DRM_MODE_ENCODER_NONE		0
+#define DRM_MODE_ENCODER_DAC		1
+#define DRM_MODE_ENCODER_TMDS		2
+#define DRM_MODE_ENCODER_LVDS		3
+#define DRM_MODE_ENCODER_TVDAC		4
+#define DRM_MODE_ENCODER_VIRTUAL	5
 
 #define DRM_MODE_SUBCONNECTOR_Automatic 0
 #define DRM_MODE_SUBCONNECTOR_Unknown   0
@@ -139,6 +143,7 @@ extern "C" {
 #define DRM_MODE_CONNECTOR_HDMIB        12
 #define DRM_MODE_CONNECTOR_TV		13
 #define DRM_MODE_CONNECTOR_eDP		14
+#define DRM_MODE_CONNECTOR_VIRTUAL	15
 
 #define DRM_MODE_PROP_PENDING   (1<<0)
 #define DRM_MODE_PROP_RANGE     (1<<1)
@@ -278,6 +283,12 @@ typedef struct _drmModeConnector {
 	uint32_t *encoders; /**< List of encoder ids */
 } drmModeConnector, *drmModeConnectorPtr;
 
+typedef struct _drmModeObjectProperties {
+	uint32_t count_props;
+	uint32_t *props;
+	uint64_t *prop_values;
+} drmModeObjectProperties, *drmModeObjectPropertiesPtr;
+
 typedef struct _drmModePlane {
 	uint32_t count_formats;
 	uint32_t *formats;
@@ -304,8 +315,8 @@ extern void drmModeFreeFB( drmModeFBPtr ptr );
 extern void drmModeFreeCrtc( drmModeCrtcPtr ptr );
 extern void drmModeFreeConnector( drmModeConnectorPtr ptr );
 extern void drmModeFreeEncoder( drmModeEncoderPtr ptr );
-extern void drmModeFreePlaneResources( drmModePlaneResPtr ptr );
 extern void drmModeFreePlane( drmModePlanePtr ptr );
+extern void drmModeFreePlaneResources(drmModePlaneResPtr ptr);
 
 /**
  * Retrives all of the resources associated with a card.
@@ -425,6 +436,16 @@ extern int drmModeSetPlane(int fd, uint32_t plane_id, uint32_t crtc_id,
 			   uint32_t src_x, uint32_t src_y,
 			   uint32_t src_w, uint32_t src_h);
 
+extern drmModeObjectPropertiesPtr drmModeObjectGetProperties(int fd,
+							uint32_t object_id,
+							uint32_t object_type);
+extern void drmModeFreeObjectProperties(drmModeObjectPropertiesPtr ptr);
+extern int drmModeObjectSetProperty(int fd, uint32_t object_id,
+				    uint32_t object_type, uint32_t property_id,
+				    uint64_t value);
+
 #if defined(__cplusplus) || defined(c_plusplus)
 }
+#endif
+
 #endif
