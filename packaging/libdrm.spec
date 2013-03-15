@@ -1,7 +1,7 @@
 #sbs-git:slp/pkgs/xorg/lib/libdrm libdrm 2.4.27 4df9ab272d6eac089f89ecd9302d39263541a794
 Name:           libdrm
 Version:        2.4.35
-Release:        11
+Release:        13
 License:        MIT
 Summary:        Userspace interface to kernel DRM services
 Group:          System/Libraries
@@ -15,9 +15,8 @@ Description: %{summary}
 %package devel
 Summary:        Userspace interface to kernel DRM services
 Group:          Development/Libraries
-Requires:       libdrm2
-Requires:       libdrm-slp1
-Requires:       libkms1
+Requires: libdrm2 = %{version}-%{release}
+Requires: libkms1
 
 %description devel
 Userspace interface to kernel DRM services

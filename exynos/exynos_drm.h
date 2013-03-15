@@ -243,15 +243,14 @@ enum drm_exynos_g2d_event_type {
 };
 
 struct drm_exynos_g2d_set_cmdlist {
-	struct drm_exynos_g2d_cmd		*cmd;
-	struct drm_exynos_g2d_cmd		*cmd_gem;
+	__u64					cmd;
+	__u64					cmd_gem;
 	__u32					cmd_nr;
 	__u32					cmd_gem_nr;
 
 	/* for g2d event */
+	__u64					event_type;
 	__u64					user_data;
-	__u32					event_type;
-	__u32					reserved;
 };
 
 struct drm_exynos_g2d_exec {
