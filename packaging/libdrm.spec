@@ -76,7 +76,7 @@ make %{?_smp_mflags}
 %{_includedir}/*
 %{_includedir}/exynos/*
 %{_libdir}/libdrm.so
-%{_libdir}/libdrm_slp.so
+#%{_libdir}/libdrm_slp.so
 %{_libdir}/libdrm_exynos.so
 %{_libdir}/libkms.so
 %{_libdir}/pkgconfig/*
@@ -86,7 +86,7 @@ make %{?_smp_mflags}
 %{_libdir}/libdrm_exynos.so.*
 
 %files slp1
-%{_libdir}/libdrm_slp*.so.*
+#%{_libdir}/libdrm_slp*.so.*
 
 %files -n libkms1
 %{_libdir}/libkms.so.*
