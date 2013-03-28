@@ -382,7 +382,8 @@ struct drm_exynos_ipp_property {
 	enum drm_exynos_ipp_cmd	cmd;
 	__u32	ipp_id;
 	__u32	prop_id;
-	__u32   refresh_rate;
+	__u32	refresh_rate;
+	__u32	protect;
 };
 
 /* definition of buffer */
