@@ -31,8 +31,8 @@ if HAVE_RADEON
 libkms_la_SOURCES += radeon.c
 endif
 
-if HAVE_SLP
-libkms_la_SOURCES += slp.c
+if HAVE_EXYNOS
+libkms_la_SOURCES += exynos.c
 AM_CFLAGS += -I$(top_srcdir)/exynos
 endif
 

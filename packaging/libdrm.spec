@@ -28,13 +28,6 @@ Group:          Development/Libraries
 %description -n libdrm2
 Userspace interface to kernel DRM services
 
-%package slp1
-Summary:        Userspace interface to slp-specific kernel DRM services
-Group:          Development/Libraries
-
-%description slp1
-Userspace interface to slp-specific kernel DRM services
-
 %package -n libkms1
 Summary:        Userspace interface to kernel DRM buffer management
 Group:          Development/Libraries
@@ -64,9 +57,6 @@ make %{?_smp_mflags}
 %post -n libdrm2 -p /sbin/ldconfig
 %postun -n libdrm2 -p /sbin/ldconfig
 
-%post slp1 -p /sbin/ldconfig
-%postun slp1  -p /sbin/ldconfig
-
 %post -n libkms1 -p /sbin/ldconfig
 %postun -n libkms1 -p /sbin/ldconfig
 
@@ -76,7 +66,6 @@ make %{?_smp_mflags}
 %{_includedir}/*
 %{_includedir}/exynos/*
 %{_libdir}/libdrm.so
-#%{_libdir}/libdrm_slp.so
 %{_libdir}/libdrm_exynos.so
 %{_libdir}/libkms.so
 %{_libdir}/pkgconfig/*
@@ -84,9 +73,6 @@ make %{?_smp_mflags}
 %files -n libdrm2
 %{_libdir}/libdrm.so.*
 %{_libdir}/libdrm_exynos.so.*
-
-%files slp1
-#%{_libdir}/libdrm_slp*.so.*
 
 %files -n libkms1
 %{_libdir}/libkms.so.*
