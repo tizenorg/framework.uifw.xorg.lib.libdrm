@@ -368,6 +368,12 @@ enum drm_exynos_ipp_cmd {
 	IPP_CMD_MAX,
 };
 
+/* define of CSC range */
+enum drm_exynos_ipp_csc_range {
+	IPP_CSC_NARROW,
+	IPP_CSC_WIDE,
+};
+
 /**
  * A structure for ipp property.
  *
@@ -375,7 +381,9 @@ enum drm_exynos_ipp_cmd {
  * @cmd: definition of command.
  * @ipp_id: id of ipp driver.
  * @prop_id: id of property.
- * @refresh_rate: refresh rate for writeback.
+ * @refresh_rate: refresh rate.
+ * @protect: protection enable flag.
+ * @range: color space converting range.
  */
 struct drm_exynos_ipp_property {
 	struct drm_exynos_ipp_config config[EXYNOS_DRM_OPS_MAX];
@@ -384,6 +392,7 @@ struct drm_exynos_ipp_property {
 	__u32	prop_id;
 	__u32	refresh_rate;
 	__u32	protect;
+	enum drm_exynos_ipp_csc_range range;
 };
 
 /* definition of buffer */
