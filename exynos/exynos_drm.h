@@ -368,10 +368,10 @@ enum drm_exynos_ipp_cmd {
 	IPP_CMD_MAX,
 };
 
-/* define of CSC range */
-enum drm_exynos_ipp_csc_range {
-	IPP_CSC_NARROW,
-	IPP_CSC_WIDE,
+/* define of color range */
+enum drm_exynos_color_range {
+    COLOR_RANGE_LIMITED,
+    COLOR_RANGE_FULL,
 };
 
 /**
@@ -392,7 +392,7 @@ struct drm_exynos_ipp_property {
 	__u32	prop_id;
 	__u32	refresh_rate;
 	__u32	protect;
-	enum drm_exynos_ipp_csc_range range;
+	enum drm_exynos_color_range range;
 };
 
 /* definition of buffer */
