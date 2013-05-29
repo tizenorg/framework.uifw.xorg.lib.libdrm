@@ -463,12 +463,21 @@ enum drm_exynos_hdmi_codec {
  * @type: audio type list.
  * @codec: audio codec list.
  * @enable: enable or disable audio.
+ * @sampling_freq: sampling frequency.
+	e.g 32000,44100,48000,88200,
+	96000,176400,192000.
+ * @channel: channel mode.
+	e.g stereo-2,5.1 channel-6.
+ * @bits_per_sample: bit per sample.
+	e.g 16,20,24.
  */
 struct drm_exynos_hdmi_audio {
 	enum drm_exynos_hdmi_type	type;
 	enum drm_exynos_hdmi_codec	codec;
 	__u32	enable;
-	__u32	reserved;
+	__u32	sampling_freq;
+	__u32	channel;
+	__u32	bits_per_sample;
 };
 
 #define DRM_EXYNOS_GEM_CREATE		0x00
