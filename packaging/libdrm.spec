@@ -48,6 +48,9 @@ Userspace interface to kernel DRM buffer management
 make %{?_smp_mflags}
 
 %install
+mkdir -p %{buildroot}/usr/share/license
+cp -af COPYING %{buildroot}/usr/share/license/libdrm2
+cp -af COPYING %{buildroot}/usr/share/license/libkms1
 %make_install
 
 
@@ -71,8 +74,10 @@ make %{?_smp_mflags}
 %{_libdir}/pkgconfig/*
 
 %files -n libdrm2
+/usr/share/license/libdrm2
 %{_libdir}/libdrm.so.*
 %{_libdir}/libdrm_exynos.so.*
 
 %files -n libkms1
+/usr/share/license/libkms1
 %{_libdir}/libkms.so.*
