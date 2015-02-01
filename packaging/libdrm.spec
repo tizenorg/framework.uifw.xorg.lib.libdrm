@@ -1,6 +1,6 @@
 Name:           libdrm
 Version:        2.4.35
-Release:        18
+Release:        20
 License:        MIT
 Summary:        Userspace interface to kernel DRM services
 Group:          System/Libraries
@@ -58,6 +58,7 @@ make %{?_smp_mflags}
 
 %post -n libkms1 -p /sbin/ldconfig
 %postun -n libkms1 -p /sbin/ldconfig
+
 
 %files devel
 %dir %{_includedir}/libdrm
