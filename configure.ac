@@ -93,18 +93,10 @@ AC_ARG_ENABLE(exynos-experimental-api,
 	      [Enable support for EXYNOS's experimental API (default: disabled)]),
 	      [EXYNOS=$enableval], [EXYNOS=no])
 
-AC_ARG_ENABLE(slp,
-	      AS_HELP_STRING([--disable-slp],
-	      [Enable support for slp's API (default: auto)]),
-	      [SLP=$enableval], [SLP=auto])
-
-AC_ARG_VAR([bufmgr_dir], [Directory of slp-bufmgr])
-
-if test "x$bufmgr_dir" = xyes; then
-  AC_DEFINE_UNQUOTED(BUFMGR_DIR, "$bufmgr_dir", [Directory for the modules of slp_bufmgr])
-else
-  AC_DEFINE(BUFMGR_DIR, "/usr/lib/bufmgr", [Directory for the modules of slp_bufmgr])
-fi
+AC_ARG_ENABLE(vigs,
+	      AS_HELP_STRING([--disable-vigs],
+	      [Enable support for VIGS's API (default: enabled)]),
+	      [VIGS=$enableval], [VIGS=yes])
 
 dnl ===========================================================================
 dnl check compiler flags
@@ -223,11 +215,11 @@ AM_CONDITIONAL(HAVE_CAIRO, [test "x$HAVE_CAIRO" = xyes])
 # For enumerating devices in test case
 PKG_CHECK_MODULES(LIBUDEV, libudev, [HAVE_LIBUDEV=yes], [HAVE_LIBUDEV=no])
 if test "x$HAVE_LIBUDEV" = xyes; then
-   	AC_DEFINE(HAVE_LIBUDEV, 1, [Have libudev support])
+	AC_DEFINE(HAVE_LIBUDEV, 1, [Have libudev support])
 fi
 AM_CONDITIONAL(HAVE_LIBUDEV, [test "x$HAVE_LIBUDEV" = xyes])
 
-if test "x$INTEL" != "xno" -o "x$RADEON" != "xno" -o "x$NOUVEAU" != "xno" -o "x$SLP" != "xno"; then
+if test "x$INTEL" != "xno" -o "x$RADEON" != "xno" -o "x$NOUVEAU" != "xno" -o "x$VIGS" != "xno"; then
     # Check for atomic intrinsics
     AC_CACHE_CHECK([for native atomic primitives], drm_cv_atomic_primitives,
     [
@@ -299,8 +291,8 @@ if test "x$INTEL" != "xno" -o "x$RADEON" != "xno" -o "x$NOUVEAU" != "xno" -o "x$
     fi
 fi
 
-if test "x$SLP" != "xno"; then
-	AC_DEFINE(HAVE_SLP, 1, [Have slp])
+if test "x$VIGS" != "xno"; then
+	AC_DEFINE(HAVE_VIGS, 1, [Have VIGS])
 fi
 
 if test "x$INTEL" != "xno"; then
@@ -314,13 +306,13 @@ if test "x$have_valgrind" = "xyes"; then
 	AC_DEFINE([HAVE_VALGRIND], 1, [Use valgrind intrinsics to suppress false warnings])
 fi
 
-AM_CONDITIONAL(HAVE_SLP, [test "x$SLP" != "xno"])
 AM_CONDITIONAL(HAVE_INTEL, [test "x$INTEL" != "xno"])
 AM_CONDITIONAL(HAVE_RADEON, [test "x$RADEON" != "xno"])
 AM_CONDITIONAL(HAVE_NOUVEAU, [test "x$NOUVEAU" != "xno"])
 if test "x$RADEON" = xyes; then
 	AC_DEFINE(HAVE_RADEON, 1, [Have radeon support])
 fi
+AM_CONDITIONAL(HAVE_VIGS, [test "x$VIGS" != "xno"])
 
 AC_ARG_WITH([kernel-source],
             [AS_HELP_STRING([--with-kernel-source],
@@ -333,8 +325,6 @@ AC_CONFIG_FILES([
 	Makefile
 	libkms/Makefile
 	libkms/libkms.pc
-	slp/Makefile
-	slp/libdrm_slp.pc
 	intel/Makefile
 	intel/libdrm_intel.pc
 	radeon/Makefile
@@ -345,6 +335,8 @@ AC_CONFIG_FILES([
 	omap/libdrm_omap.pc
 	exynos/Makefile
 	exynos/libdrm_exynos.pc
+	vigs/Makefile
+	vigs/libdrm_vigs.pc
 	tests/Makefile
 	tests/modeprint/Makefile
 	tests/modetest/Makefile
@@ -352,10 +344,6 @@ AC_CONFIG_FILES([
 	tests/proptest/Makefile
 	tests/radeon/Makefile
 	tests/vbltest/Makefile
-	tests/gemtest/Makefile
-	tests/g2dtest/Makefile
-	tests/ipptest/Makefile
-	tests/rottest/Makefile
 	include/Makefile
 	include/drm/Makefile
 	libdrm.pc])
@@ -371,6 +359,5 @@ echo "  Radeon API     $RADEON"
 echo "  Nouveau API    $NOUVEAU"
 echo "  OMAP API       $OMAP"
 echo "  EXYNOS API     $EXYNOS"
-echo "  SLP API        $SLP"
-echo "  SLP bufmgr_dir $bufmgr_dir"
+echo "  VIGS API       $VIGS"
 echo ""

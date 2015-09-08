@@ -41,14 +41,14 @@
 
 #include "exynos_drm.h"
 
-struct slp_bo
+struct exynos_bo
 {
 	struct kms_bo base;
 	unsigned map_count;
 };
 
 static int
-slp_get_prop(struct kms_driver *kms, unsigned key, unsigned *out)
+exynos_get_prop(struct kms_driver *kms, unsigned key, unsigned *out)
 {
 	switch (key) {
 	case KMS_BO_TYPE:
@@ -61,21 +61,21 @@ slp_get_prop(struct kms_driver *kms, unsigned key, unsigned *out)
 }
 
 static int
-slp_destroy(struct kms_driver *kms)
+exynos_destroy(struct kms_driver *kms)
 {
 	free(kms);
 	return 0;
 }
 
 static int
-slp_bo_create(struct kms_driver *kms,
+exynos_bo_create(struct kms_driver *kms,
 		 const unsigned width, const unsigned height,
 		 const enum kms_bo_type type, const unsigned *attr,
 		 struct kms_bo **out)
 {
 	struct drm_exynos_gem_create arg;
 	unsigned size, pitch;
-	struct slp_bo *bo;
+	struct exynos_bo *bo;
 	int i, ret;
 
 	for (i = 0; attr[i]; i += 2) {
@@ -126,7 +126,7 @@ err_free:
 }
 
 static int
-slp_bo_get_prop(struct kms_bo *bo, unsigned key, unsigned *out)
+exynos_bo_get_prop(struct kms_bo *bo, unsigned key, unsigned *out)
 {
 	switch (key) {
 	default:
@@ -135,9 +135,9 @@ slp_bo_get_prop(struct kms_bo *bo, unsigned key, unsigned *out)
 }
 
 static int
-slp_bo_map(struct kms_bo *_bo, void **out)
+exynos_bo_map(struct kms_bo *_bo, void **out)
 {
-	struct slp_bo *bo = (struct slp_bo *)_bo;
+	struct exynos_bo *bo = (struct exynos_bo *)_bo;
 	struct drm_exynos_gem_map_off arg;
 	void *map = NULL;
 	int ret;
@@ -167,17 +167,17 @@ slp_bo_map(struct kms_bo *_bo, void **out)
 }
 
 static int
-slp_bo_unmap(struct kms_bo *_bo)
+exynos_bo_unmap(struct kms_bo *_bo)
 {
-	struct slp_bo *bo = (struct slp_bo *)_bo;
+	struct exynos_bo *bo = (struct exynos_bo *)_bo;
 	bo->map_count--;
 	return 0;
 }
 
 static int
-slp_bo_destroy(struct kms_bo *_bo)
+exynos_bo_destroy(struct kms_bo *_bo)
 {
-	struct slp_bo *bo = (struct slp_bo *)_bo;
+	struct exynos_bo *bo = (struct exynos_bo *)_bo;
 	struct drm_gem_close arg;
 	int ret;
 
@@ -199,7 +199,7 @@ slp_bo_destroy(struct kms_bo *_bo)
 }
 
 int
-slp_create(int fd, struct kms_driver **out)
+exynos_create(int fd, struct kms_driver **out)
 {
 	struct kms_driver *kms;
 
@@ -209,13 +209,13 @@ slp_create(int fd, struct kms_driver **out)
 
 	kms->fd = fd;
 
-	kms->bo_create = slp_bo_create;
-	kms->bo_map = slp_bo_map;
-	kms->bo_unmap = slp_bo_unmap;
-	kms->bo_get_prop = slp_bo_get_prop;
-	kms->bo_destroy = slp_bo_destroy;
-	kms->get_prop = slp_get_prop;
-	kms->destroy = slp_destroy;
+	kms->bo_create = exynos_bo_create;
+	kms->bo_map = exynos_bo_map;
+	kms->bo_unmap = exynos_bo_unmap;
+	kms->bo_get_prop = exynos_bo_get_prop;
+	kms->bo_destroy = exynos_bo_destroy;
+	kms->get_prop = exynos_get_prop;
+	kms->destroy = exynos_destroy;
 	*out = kms;
 
 	return 0;

@@ -111,19 +111,6 @@ struct drm_exynos_gem_info {
 };
 
 /**
- * A structure to userptr limited information.
- *
- * @userptr_limit: maximum size to userptr buffer.
- *	the buffer could be allocated by unprivileged user using malloc()
- *	and the size of the buffer would be limited as userptr_limit value.
- * @pad: just padding to be 64-bit aligned.
- */
-struct drm_exynos_user_limit {
-	unsigned int userptr_limit;
-	unsigned int pad;
-};
-
-/**
  * A structure for user connection request of virtual display.
  *
  * @connection: indicate whether doing connetion or not by user.
@@ -170,6 +157,11 @@ struct drm_exynos_gem_phy_imp {
 	uint64_t size;
 	unsigned int gem_handle;
 	unsigned int pad;
+};
+
+/* Indicate exynos specific vblank flags */
+enum e_drm_exynos_vblank {
+	_DRM_VBLANK_EXYNOS_VIDI	= 2,
 };
 
 /* indicate cache units. */
@@ -251,15 +243,14 @@ enum drm_exynos_g2d_event_type {
 };
 
 struct drm_exynos_g2d_set_cmdlist {
-	struct drm_exynos_g2d_cmd		*cmd;
-	struct drm_exynos_g2d_cmd		*cmd_gem;
+	__u64					cmd;
+	__u64					cmd_gem;
 	__u32					cmd_nr;
 	__u32					cmd_gem_nr;
 
 	/* for g2d event */
+	__u64					event_type;
 	__u64					user_data;
-	__u32					event_type;
-	__u32					reserved;
 };
 
 struct drm_exynos_g2d_exec {
@@ -271,7 +262,7 @@ struct drm_exynos_g2d_exec {
 enum drm_exynos_ops_id {
 	EXYNOS_DRM_OPS_SRC,
 	EXYNOS_DRM_OPS_DST,
-	EXYNOS_DRM_OPS_MAX
+	EXYNOS_DRM_OPS_MAX,
 };
 
 /* definition of size */
@@ -308,7 +299,45 @@ enum drm_exynos_planer {
 	EXYNOS_DRM_PLANAR_Y,
 	EXYNOS_DRM_PLANAR_CB,
 	EXYNOS_DRM_PLANAR_CR,
-	EXYNOS_DRM_PLANAR_MAX
+	EXYNOS_DRM_PLANAR_MAX,
+};
+
+/**
+ * A structure for ipp supported property list.
+ *
+ * @version: version of this structure.
+ * @ipp_id: id of ipp driver.
+ * @count: count of ipp driver.
+ * @writeback: flag of writeback supporting.
+ * @flip: flag of flip supporting.
+ * @degree: flag of degree information.
+ * @csc: flag of csc supporting.
+ * @crop: flag of crop supporting.
+ * @scale: flag of scale supporting.
+ * @refresh_min: min hz of refresh.
+ * @refresh_max: max hz of refresh.
+ * @crop_min: crop min resolution.
+ * @crop_max: crop max resolution.
+ * @scale_min: scale min resolution.
+ * @scale_max: scale max resolution.
+ */
+struct drm_exynos_ipp_prop_list {
+	__u32	version;
+	__u32	ipp_id;
+	__u32	count;
+	__u32	writeback;
+	__u32	flip;
+	__u32	degree;
+	__u32	csc;
+	__u32	crop;
+	__u32	scale;
+	__u32	refresh_min;
+	__u32	refresh_max;
+	__u32	reserved;
+	struct drm_exynos_sz	crop_min;
+	struct drm_exynos_sz	crop_max;
+	struct drm_exynos_sz	scale_min;
+	struct drm_exynos_sz	scale_max;
 };
 
 /**
@@ -330,58 +359,192 @@ struct drm_exynos_ipp_config {
 	struct drm_exynos_pos	pos;
 };
 
-/**
- * A structure for ipp property.
- *
- * @config: source, destination config.
- */
-struct drm_exynos_ipp_property {
-	struct drm_exynos_ipp_config config[EXYNOS_DRM_OPS_MAX];
-};
-
-/* command of ipp operations */
+/* definition of command */
 enum drm_exynos_ipp_cmd {
 	IPP_CMD_NONE,
 	IPP_CMD_M2M,
 	IPP_CMD_WB,
-	IPP_CMD_OUT,
-	IPP_CMD_MAX
+	IPP_CMD_OUTPUT,
+	IPP_CMD_MAX,
 };
 
-/* definition of buffer control */
-enum drm_exynos_ipp_buf_ctrl {
-	IPP_BUF_CTRL_MAP,
-	IPP_BUF_CTRL_UNMAP,
-	IPP_BUF_CTRL_QUEUE,
-	IPP_BUF_CTRL_DEQUEUE
+/* define of color range */
+enum drm_exynos_color_range {
+    COLOR_RANGE_LIMITED,
+    COLOR_RANGE_FULL,
+};
+
+/* define of blending operation */
+enum drm_exynos_ipp_blending {
+	IPP_BLENDING_NO,
+	/* [0, 0] */
+	IPP_BLENDING_CLR,
+	/* [Sa, Sc] */
+	IPP_BLENDING_SRC,
+	/* [Da, Dc] */
+	IPP_BLENDING_DST,
+	/* [Sa + (1 - Sa)*Da, Rc = Sc + (1 - Sa)*Dc] */
+	IPP_BLENDING_SRC_OVER,
+	/* [Sa + (1 - Sa)*Da, Rc = Dc + (1 - Da)*Sc] */
+	IPP_BLENDING_DST_OVER,
+	/* [Sa * Da, Sc * Da] */
+	IPP_BLENDING_SRC_IN,
+	/* [Sa * Da, Sa * Dc] */
+	IPP_BLENDING_DST_IN,
+	/* [Sa * (1 - Da), Sc * (1 - Da)] */
+	IPP_BLENDING_SRC_OUT,
+	/* [Da * (1 - Sa), Dc * (1 - Sa)] */
+	IPP_BLENDING_DST_OUT,
+	/* [Da, Sc * Da + (1 - Sa) * Dc] */
+	IPP_BLENDING_SRC_ATOP,
+	/* [Sa, Sc * (1 - Da) + Sa * Dc ] */
+	IPP_BLENDING_DST_ATOP,
+	/* [-(Sa * Da), Sc * (1 - Da) + (1 - Sa) * Dc] */
+	IPP_BLENDING_XOR,
+	/* [Sa + Da - Sa*Da, Sc*(1 - Da) + Dc*(1 - Sa) + min(Sc, Dc)] */
+	IPP_BLENDING_DARKEN,
+	/* [Sa + Da - Sa*Da, Sc*(1 - Da) + Dc*(1 - Sa) + max(Sc, Dc)] */
+	IPP_BLENDING_LIGHTEN,
+	/* [Sa * Da, Sc * Dc] */
+	IPP_BLENDING_MULTIPLY,
+	/* [Sa + Da - Sa * Da, Sc + Dc - Sc * Dc] */
+	IPP_BLENDING_SCREEN,
+	/* Saturate(S + D) */
+	IPP_BLENDING_ADD,
+	/* Max */
+	IPP_BLENDING_MAX,
+};
+
+/* define of dithering operation */
+enum drm_exynos_ipp_dithering {
+	IPP_DITHERING_NO,
+	IPP_DITHERING_8BIT,
+	IPP_DITHERING_6BIT,
+	IPP_DITHERING_5BIT,
+	IPP_DITHERING_4BIT,
+	IPP_DITHERING_MAX,
+};
+
+/* define of ipp operation type */
+enum drm_exynos_ipp_type {
+	IPP_SYNC_WORK = 0x0,
+	IPP_EVENT_DRIVEN = 0x1,
+	IPP_TYPE_MAX = 0x2,
+};
+
+/**
+ * A structure for ipp property.
+ *
+ * @config: source, destination config.
+ * @cmd: definition of command.
+ * @ipp_id: id of ipp driver.
+ * @prop_id: id of property.
+ * @refresh_rate: refresh rate.
+ * @protect: protection enable flag.
+ * @range: color space converting range.
+ * @type: definition of operation type.
+ * @blending: blending opeation config.
+ * @dithering: dithering opeation config.
+ * @color_fill: color fill value.
+ * @type: color fill value.
+ */
+struct drm_exynos_ipp_property {
+	struct drm_exynos_ipp_config config[EXYNOS_DRM_OPS_MAX];
+	enum drm_exynos_ipp_cmd	cmd;
+	__u32	ipp_id;
+	__u32	prop_id;
+	__u32	refresh_rate;
+	__u32	protect;
+	enum drm_exynos_color_range range;
+	enum drm_exynos_ipp_type	type;
+	enum drm_exynos_ipp_blending blending;
+	enum drm_exynos_ipp_dithering	dithering;
+	__u32	color_fill;
+};
+
+/* definition of buffer */
+enum drm_exynos_ipp_buf_type {
+	IPP_BUF_ENQUEUE,
+	IPP_BUF_DEQUEUE,
 };
 
 /**
  * A structure for ipp buffer operations.
  *
  * @ops_id: operation directions.
- * @ctrl: buffer control.
- * @id: index of buffer.
+ * @buf_type: definition of buffer.
+ * @prop_id: id of property.
+ * @buf_id: id of buffer.
  * @handle: Y, Cb, Cr each planar handle.
  * @user_data: user data.
  */
-struct drm_exynos_ipp_buf {
+struct drm_exynos_ipp_queue_buf {
 	enum drm_exynos_ops_id	ops_id;
-	enum drm_exynos_ipp_buf_ctrl	buf_ctrl;
-	__u32	id;
+	enum drm_exynos_ipp_buf_type	buf_type;
+	__u32	prop_id;
+	__u32	buf_id;
 	__u32	handle[EXYNOS_DRM_PLANAR_MAX];
+	__u32	reserved;
 	__u64	user_data;
+};
+
+/* definition of control */
+enum drm_exynos_ipp_ctrl {
+	IPP_CTRL_PLAY,
+	IPP_CTRL_STOP,
+	IPP_CTRL_PAUSE,
+	IPP_CTRL_RESUME,
+	IPP_CTRL_MAX,
 };
 
 /**
  * A structure for ipp start/stop operations.
  *
- * @cmd: command id.
- * @use: use ipp device.
+ * @prop_id: id of property.
+ * @ctrl: definition of control.
  */
-struct drm_exynos_ipp_ctrl {
-	enum drm_exynos_ipp_cmd	cmd;
-	__u32	use;
+struct drm_exynos_ipp_cmd_ctrl {
+	__u32	prop_id;
+	enum drm_exynos_ipp_ctrl	ctrl;
+};
+
+/* type of hdmi audio */
+enum drm_exynos_hdmi_type {
+	HDMI_TYPE_I2S,
+	HDMI_TYPE_SPDIF,
+	HDMI_TYPE_MAX,
+};
+
+/* codec of hdmi audio */
+enum drm_exynos_hdmi_codec {
+	HDMI_CODEC_PCM,
+	HDMI_CODEC_AC3,
+	HDMI_CODEC_MP3,
+	HDMI_CODEC_WMA,
+	HDMI_CODEC_MAX,
+};
+
+/**
+ * A structure for hdmi audio enable.
+ *
+ * @type: audio type list.
+ * @codec: audio codec list.
+ * @enable: enable or disable audio.
+ * @sampling_freq: sampling frequency.
+	e.g 32000,44100,48000,88200,
+	96000,176400,192000.
+ * @channel: channel mode.
+	e.g stereo-2,5.1 channel-6.
+ * @bits_per_sample: bit per sample.
+	e.g 16,20,24.
+ */
+struct drm_exynos_hdmi_audio {
+	enum drm_exynos_hdmi_type	type;
+	enum drm_exynos_hdmi_codec	codec;
+	__u32	enable;
+	__u32	sampling_freq;
+	__u32	channel;
+	__u32	bits_per_sample;
 };
 
 #define DRM_EXYNOS_GEM_CREATE		0x00
@@ -389,7 +552,6 @@ struct drm_exynos_ipp_ctrl {
 #define DRM_EXYNOS_GEM_MMAP		0x02
 #define DRM_EXYNOS_GEM_USERPTR		0x03
 #define DRM_EXYNOS_GEM_GET		0x04
-#define DRM_EXYNOS_USER_LIMIT		0x05
 #define DRM_EXYNOS_VIDI_CONNECTION	0x07
 
 /* temporary ioctl command. */
@@ -405,9 +567,13 @@ struct drm_exynos_ipp_ctrl {
 #define DRM_EXYNOS_G2D_EXEC		0x22
 
 /* IPP - Image Post Processing */
-#define DRM_EXYNOS_IPP_PROPERTY		0x30
-#define DRM_EXYNOS_IPP_BUF			0x31
-#define DRM_EXYNOS_IPP_CTRL			0x32
+#define DRM_EXYNOS_IPP_GET_PROPERTY	0x30
+#define DRM_EXYNOS_IPP_SET_PROPERTY	0x31
+#define DRM_EXYNOS_IPP_QUEUE_BUF	0x32
+#define DRM_EXYNOS_IPP_CMD_CTRL	0x33
+
+/* HDMI - Audio */
+#define DRM_EXYNOS_HDMI_AUDIO		0x40
 
 #define DRM_IOCTL_EXYNOS_GEM_CREATE		DRM_IOWR(DRM_COMMAND_BASE + \
 		DRM_EXYNOS_GEM_CREATE, struct drm_exynos_gem_create)
@@ -423,9 +589,6 @@ struct drm_exynos_ipp_ctrl {
 
 #define DRM_IOCTL_EXYNOS_GEM_GET	DRM_IOWR(DRM_COMMAND_BASE + \
 		DRM_EXYNOS_GEM_GET,	struct drm_exynos_gem_info)
-
-#define DRM_IOCTL_EXYNOS_USER_LIMIT	DRM_IOWR(DRM_COMMAND_BASE + \
-		DRM_EXYNOS_USER_LIMIT,	struct drm_exynos_user_limit)
 
 #define DRM_IOCTL_EXYNOS_GEM_EXPORT_UMP	DRM_IOWR(DRM_COMMAND_BASE + \
 		DRM_EXYNOS_GEM_EXPORT_UMP, struct drm_exynos_gem_ump)
@@ -449,12 +612,17 @@ struct drm_exynos_ipp_ctrl {
 #define DRM_IOCTL_EXYNOS_G2D_EXEC		DRM_IOWR(DRM_COMMAND_BASE + \
 		DRM_EXYNOS_G2D_EXEC, struct drm_exynos_g2d_exec)
 
-#define DRM_IOCTL_EXYNOS_IPP_PROPERTY	DRM_IOWR(DRM_COMMAND_BASE + \
-		DRM_EXYNOS_IPP_PROPERTY, struct drm_exynos_ipp_property)
-#define DRM_IOCTL_EXYNOS_IPP_BUF	DRM_IOWR(DRM_COMMAND_BASE + \
-		DRM_EXYNOS_IPP_BUF, struct drm_exynos_ipp_buf)
-#define DRM_IOCTL_EXYNOS_IPP_CTRL		DRM_IOWR(DRM_COMMAND_BASE + \
-		DRM_EXYNOS_IPP_CTRL, struct drm_exynos_ipp_ctrl)
+#define DRM_IOCTL_EXYNOS_IPP_GET_PROPERTY	DRM_IOWR(DRM_COMMAND_BASE + \
+		DRM_EXYNOS_IPP_GET_PROPERTY, struct drm_exynos_ipp_prop_list)
+#define DRM_IOCTL_EXYNOS_IPP_SET_PROPERTY	DRM_IOWR(DRM_COMMAND_BASE + \
+		DRM_EXYNOS_IPP_SET_PROPERTY, struct drm_exynos_ipp_property)
+#define DRM_IOCTL_EXYNOS_IPP_QUEUE_BUF	DRM_IOWR(DRM_COMMAND_BASE + \
+		DRM_EXYNOS_IPP_QUEUE_BUF, struct drm_exynos_ipp_queue_buf)
+#define DRM_IOCTL_EXYNOS_IPP_CMD_CTRL		DRM_IOWR(DRM_COMMAND_BASE + \
+		DRM_EXYNOS_IPP_CMD_CTRL, struct drm_exynos_ipp_cmd_ctrl)
+
+#define DRM_IOCTL_EXYNOS_HDMI_AUDIO	DRM_IOWR(DRM_COMMAND_BASE + \
+		DRM_EXYNOS_HDMI_AUDIO, struct drm_exynos_hdmi_audio)
 
 /* EXYNOS specific events */
 #define DRM_EXYNOS_G2D_EVENT		0x80000000
@@ -474,8 +642,10 @@ struct drm_exynos_ipp_event {
 	__u64			user_data;
 	__u32			tv_sec;
 	__u32			tv_usec;
-	__u32			buf_idx;
+	__u32			prop_id;
 	__u32			reserved;
+	__u32			buf_id[EXYNOS_DRM_OPS_MAX];
 };
+
 
 #endif
