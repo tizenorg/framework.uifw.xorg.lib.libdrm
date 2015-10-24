@@ -98,6 +98,11 @@ AC_ARG_ENABLE(vigs,
 	      [Enable support for VIGS's API (default: enabled)]),
 	      [VIGS=$enableval], [VIGS=yes])
 
+AC_ARG_ENABLE(sdp-experimental-api,
+	      AS_HELP_STRING([--enable-sdp-experimental-api],
+	      [Enable support for SDP's experimental API (default: disabled)]),
+	      [SDP=$enableval], [SDP=no])
+
 dnl ===========================================================================
 dnl check compiler flags
 AC_DEFUN([LIBDRM_CC_TRY_FLAG], [
@@ -204,6 +209,11 @@ fi
 AM_CONDITIONAL(HAVE_EXYNOS, [test "x$EXYNOS" = xyes])
 if test "x$EXYNOS" = xyes; then
 	AC_DEFINE(HAVE_EXYNOS, 1, [Have EXYNOS support])
+fi
+
+AM_CONDITIONAL(HAVE_SDP, [test "x$SDP" = xyes])
+if test "x$SDP" = xyes; then
+	AC_DEFINE(HAVE_SDP, 1, [Have SDP support])
 fi
 
 PKG_CHECK_MODULES(CAIRO, cairo, [HAVE_CAIRO=yes], [HAVE_CAIRO=no])
@@ -337,6 +347,8 @@ AC_CONFIG_FILES([
 	exynos/libdrm_exynos.pc
 	vigs/Makefile
 	vigs/libdrm_vigs.pc
+	sdp/Makefile
+	sdp/libdrm_sdp.pc
 	tests/Makefile
 	tests/modeprint/Makefile
 	tests/modetest/Makefile
@@ -344,6 +356,7 @@ AC_CONFIG_FILES([
 	tests/proptest/Makefile
 	tests/radeon/Makefile
 	tests/vbltest/Makefile
+	tests/sdp/Makefile
 	include/Makefile
 	include/drm/Makefile
 	libdrm.pc])
@@ -360,4 +373,5 @@ echo "  Nouveau API    $NOUVEAU"
 echo "  OMAP API       $OMAP"
 echo "  EXYNOS API     $EXYNOS"
 echo "  VIGS API       $VIGS"
+echo "  SDP API        $SDP"
 echo ""

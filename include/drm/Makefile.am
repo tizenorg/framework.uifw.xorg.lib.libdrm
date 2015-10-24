@@ -43,3 +43,7 @@ klibdrminclude_HEADERS = \
 if HAVE_VMWGFX
 klibdrminclude_HEADERS += vmwgfx_drm.h
 endif
+
+if HAVE_SDP
+klibdrminclude_HEADERS += sdp_drm.h
+endif

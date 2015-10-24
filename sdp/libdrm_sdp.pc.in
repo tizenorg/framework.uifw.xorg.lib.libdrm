@@ -1,0 +1,11 @@
+prefix=@prefix@
+exec_prefix=@exec_prefix@
+libdir=@libdir@
+includedir=@includedir@
+
+Name: libdrm_sdp
+Description: Userspace interface to sdp kernel DRM services
+Version: 0.6
+Libs: -L${libdir} -ldrm_sdp
+Cflags: -I${includedir} -I${includedir}/libdrm
+Requires.private: libdrm
